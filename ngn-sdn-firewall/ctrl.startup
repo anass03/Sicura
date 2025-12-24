@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo "[CTRL] startup running" > /tmp/startup.log
+
+# Configuro IP sulla interfaccia di management (rete 10.0.0.0/24 verso lo switch)
+ip addr add 10.0.0.1/24 dev eth0
+ip link set eth0 up
+
+# Aspetto un attimo che lo switch si alzi
+sleep 3
+
+export PYTHONUNBUFFERED=1
+export PYTHONPATH=/shared:$PYTHONPATH
+
+# Avvio il controller Ryu con la nostra app firewall e API REST (porta 8080)
+ryu-manager --ofp-tcp-listen-port 6633 --wsapi-host 0.0.0.0 --wsapi-port 8080 /shared/sdn_firewall.py

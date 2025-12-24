@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+ip addr add 10.0.10.20/24 dev eth0 2>/dev/null || true
+ip link set eth0 up 2>/dev/null || true
+ip route add default via 10.0.10.1 2>/dev/null || true
+
+cat > /tmp/mosquitto.conf <<'EOF'
+listener 1883 0.0.0.0
+allow_anonymous true
+EOF
+
+mosquitto -c /tmp/mosquitto.conf -v &
+

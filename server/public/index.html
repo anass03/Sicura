@@ -1,0 +1,1780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Sicura</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1220" />
+    <style>
+	        /* =========================
+	    TEMA GENERALE
+	    ========================= */
+	        :root {
+	            --bg-body: #0b0f14;
+	            --bg-main: transparent;
+	            --bg-card: #111827;
+	            --bg-card-elevated: #0f172a;
+	            --bg-input: #0b1220;
+
+	            --accent: #6366f1;           /* indigo */
+	            --accent-hover: #818cf8;
+	            --accent-soft: rgba(99, 102, 241, 0.18);
+	            --accent-green: #22c55e;
+	            --accent-red: #fb7185;       /* rose */
+	            --accent-amber: #f59e0b;
+
+	            --text-main: #eef2ff;
+	            --text-muted: rgba(226, 232, 240, 0.72);
+	            --border-subtle: rgba(148, 163, 184, 0.18);
+	            --border-soft: rgba(148, 163, 184, 0.28);
+
+	            --radius-card: 18px;
+	            --radius-input: 12px;
+	            --shadow-soft: 0 16px 45px rgba(0, 0, 0, 0.35);
+	            --shadow-tight: 0 10px 22px rgba(0, 0, 0, 0.30);
+	            --font-main: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+	        }
+
+        /* RESET BASE */
+        * {
+            box-sizing: border-box;
+        }
+
+	        body {
+            margin: 0;
+            padding: 0;
+	            background: var(--bg-body);
+	            color: var(--text-main);
+	            font-family: var(--font-main);
+	            line-height: 1.35;
+	            min-height: 100vh;
+	            display: flex;
+	            justify-content: center;
+	        }
+
+        /* =========================
+           LAYOUT PRINCIPALE
+           ========================= */
+	        .app {
+	            width: 100%;
+	            max-width: 1120px;
+	            padding: 22px 18px 34px;
+	            display: flex;
+	            flex-direction: column;
+	            gap: 20px;
+	        }
+
+        /* HEADER */
+	        header {
+	            display: flex;
+	            justify-content: space-between;
+	            align-items: center;
+	            padding: 6px 2px;
+	            background: transparent;
+	            border: none;
+	            box-shadow: none;
+	            backdrop-filter: none;
+	        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* piccolo cerchio “brand” */
+	        .logo-circle {
+	            width: 28px;
+	            height: 28px;
+	            border-radius: 999px;
+	            background: var(--accent);
+	            position: relative;
+	        }
+
+	        .logo-circle::after {
+	            content: "";
+	            position: absolute;
+	            inset: 4px;
+	            border-radius: inherit;
+	            background: var(--bg-body);
+	        }
+
+	        h1 {
+	            font-size: 22px;
+	            margin: 0;
+	            letter-spacing: 0.03em;
+	            font-weight: 600;
+	        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 1px;
+        }
+
+        /* GRID DASHBOARD */
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 3.3fr) minmax(0, 4fr);
+            gap: 18px;
+        }
+
+        .col-left,
+        .col-right {
+            min-width: 0;
+        }
+
+        .col-right {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        @media (max-width: 960px) {
+            .grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        /* =========================
+           CARD & CONTENITORI
+           ========================= */
+	        .card {
+	            background: var(--bg-card);
+	            border-radius: var(--radius-card);
+	            padding: 16px 16px 16px;
+	            box-shadow: var(--shadow-soft);
+	            border: 1px solid var(--border-subtle);
+	            backdrop-filter: none;
+	        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        /* badge stile “pill” */
+	        .badge {
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border: 1px solid var(--border-soft);
+	            background: rgba(2, 6, 23, 0.35);
+	            color: var(--text-muted);
+	            box-shadow: none;
+	        }
+
+        .badge-green {
+            background: rgba(22, 163, 74, 0.1);
+            border-color: rgba(22, 163, 74, 0.5);
+            color: #bbf7d0;
+        }
+
+        .badge-red {
+            background: rgba(248, 113, 113, 0.12);
+            border-color: rgba(248, 113, 113, 0.6);
+            color: #fecaca;
+        }
+
+        /* =========================
+           STATO SISTEMA / RICHIESTE
+           ========================= */
+	        .status-text {
+	            font-size: 18px;
+	            margin: 4px 0 0;
+	            letter-spacing: 0.01em;
+	            font-weight: 600;
+	        }
+
+	        .status-pill {
+            align-self: flex-start;
+            margin-top: 10px;
+            padding: 5px 11px;
+            border-radius: 999px;
+            font-size: 12px;
+	            background: rgba(2, 6, 23, 0.42);
+	            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+	            border: 1px solid var(--border-subtle);
+	        }
+
+	        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+	            background: var(--accent-amber);
+	        }
+
+        .dot.green {
+            background: var(--accent-green);
+        }
+        .dot.red {
+            background: #f97373;
+        }
+        .dot.blue {
+            background: var(--accent);
+        }
+
+        .request-body {
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        .request-label {
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 2px;
+        }
+
+        .request-value {
+            font-size: 15px;
+            margin: 0 0 6px;
+        }
+
+        /* =========================
+           BOTTONI
+           ========================= */
+	        button {
+	            border-radius: 12px;
+	            border: none;
+	            padding: 10px 16px;
+	            font-size: 14px;
+	            font-weight: 500;
+	            cursor: pointer;
+	            color: #f9fafb;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+	            transition:
+	                    background 0.14s ease,
+	                    transform 0.08s ease,
+	                    box-shadow 0.14s ease,
+	                    opacity 0.15s,
+	                    filter 0.14s ease;
+	            background: var(--accent);
+	        }
+
+	        button:focus-visible {
+	            outline: 2px solid rgba(129, 140, 248, 0.8);
+	            outline-offset: 2px;
+	        }
+
+	        button:hover:not(:disabled) {
+	            filter: brightness(1.02);
+	        }
+
+	        button:active {
+	            transform: translateY(1px);
+	            box-shadow: none;
+	        }
+
+        button:disabled {
+            cursor: default;
+        }
+
+	        .btn-ok {
+	            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+	            box-shadow: 0 10px 22px rgba(99, 102, 241, 0.35);
+	        }
+	        .btn-ok:hover:not(:disabled) {
+	            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+	        }
+
+	        .btn-ko {
+	            background: linear-gradient(135deg, #fb7185, #ef4444);
+	            box-shadow: 0 10px 22px rgba(251, 113, 133, 0.30);
+	        }
+	        .btn-ko:hover:not(:disabled) {
+	            background: linear-gradient(135deg, #f43f5e, #e11d48);
+	        }
+
+        .btn-disabled {
+            opacity: 0.45 !important;
+            box-shadow: none !important;
+        }
+
+        /* gruppo bottoni */
+        .buttons {
+            margin-top: 14px;
+            display: flex;
+            gap: 10px;
+        }
+
+        /* logout compatto */
+        #logoutBtn {
+            flex: 0 0 auto;
+            padding-inline: 16px;
+            font-size: 13px;
+        }
+
+        /* =========================
+           TABELLE / LISTE
+           ========================= */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 6px;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            padding: 7px 6px;
+            text-align: left;
+        }
+
+	        th {
+	            font-weight: 500;
+	            color: var(--text-muted);
+	            border-bottom: 1px solid var(--border-subtle);
+	        }
+
+	        tr:nth-child(even) td {
+	            background: rgba(2, 6, 23, 0.22);
+	        }
+
+	        tr:hover td {
+	            background: rgba(148, 163, 184, 0.06);
+	        }
+
+        .log-decision-ok {
+            color: var(--accent-green);
+        }
+        .log-decision-ko {
+            color: var(--accent-red);
+        }
+        .log-decision-pending {
+            color: #facc15;
+        }
+
+        /* wrapper scrollabile */
+        .scrollable-card {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .table-header {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .table-scroll-log {
+            max-height: 260px;
+            overflow-y: auto;
+            margin-top: 4px;
+        }
+
+        .table-scroll-utenti {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 4px;
+        }
+
+        .table-body {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .table-body td[colspan] {
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        /* mobile */
+        @media (max-width: 640px) {
+            .table-header th,
+            .table-body td {
+                font-size: 11px;
+                padding: 4px 3px;
+                word-break: break-word;
+            }
+        }
+
+        /* =========================
+           FORM / AUTENTICAZIONE / UTENTI
+           ========================= */
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 10px;
+            gap: 4px;
+        }
+
+        .form-field label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+	        .form-field input {
+	            padding: 8px 10px;
+	            border-radius: var(--radius-input);
+	            border: 1px solid var(--border-subtle);
+	            background: var(--bg-input);
+	            color: var(--text-main);
+	            font-size: 14px;
+	            outline: none;
+            transition: border-color 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
+        }
+
+	        .form-field input:focus {
+	            border-color: var(--accent);
+	            background: rgba(2, 6, 23, 0.6);
+	            box-shadow: 0 0 0 1px var(--accent-soft);
+	        }
+
+        .small-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .log-card {
+            margin-top: 4px;
+        }
+
+        /* messaggi */
+	        .msg-error,
+	        .msg-success,
+	        .msg-warning,
+	        .msg-info {
+	            font-size: 13px;
+	            margin-top: 6px;
+	        }
+
+	        .msg-error {
+	            color: #fecdd3;
+	            background: rgba(244, 63, 94, 0.14);
+	            border: 1px solid rgba(244, 63, 94, 0.35);
+	            padding: 8px 10px;
+	            border-radius: 12px;
+	        }
+		        .msg-success {
+		            color: #bbf7d0;
+		            background: rgba(34, 197, 94, 0.12);
+		            border: 1px solid rgba(34, 197, 94, 0.32);
+		            padding: 8px 10px;
+		            border-radius: 12px;
+		        }
+		        .msg-warning {
+		            color: #fde68a;
+		            background: rgba(245, 158, 11, 0.14);
+		            border: 1px solid rgba(245, 158, 11, 0.35);
+		            padding: 8px 10px;
+		            border-radius: 12px;
+		        }
+		        .msg-info {
+		            color: #c7d2fe;
+		            background: rgba(99, 102, 241, 0.12);
+		            border: 1px solid rgba(99, 102, 241, 0.32);
+		            padding: 8px 10px;
+		            border-radius: 12px;
+		        }
+
+        /* layout auth (login/registro) */
+        .auth-single-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin-top: 40px;
+        }
+
+        .auth-single-container .card {
+            width: 100%;
+            max-width: 460px;
+        }
+
+        /* =========================
+           BOTTONI PICCOLI (AZIONI UTENTE)
+           ========================= */
+        .user-actions {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+	        .btn-toggle {
+            flex: 0 0 auto;
+            padding: 4px 10px;
+            font-size: 11px;
+	            border-radius: 12px;
+	            border: 1px solid var(--border-subtle);
+	            background: rgba(2, 6, 23, 0.35);
+	            color: rgba(238, 242, 255, 0.92);
+	            cursor: pointer;
+            transition:
+                    background 0.12s ease,
+                    border-color 0.12s ease,
+                    color 0.12s ease;
+        }
+
+	        .btn-toggle:hover {
+	            background: rgba(99, 102, 241, 0.08);
+	        }
+
+	        .btn-toggle:disabled {
+	            opacity: 0.55;
+	            cursor: default;
+	        }
+
+	        .btn-toggle-delete {
+	            border-color: rgba(251, 113, 133, 0.55);
+	            color: #fecdd3;
+	            background: rgba(251, 113, 133, 0.10);
+	        }
+	        .btn-toggle-delete:hover {
+	            background: rgba(251, 113, 133, 0.16);
+	        }
+
+	        .btn-toggle-enabled {
+	            background: rgba(255, 255, 255, 0.06);
+	            color: rgba(238, 242, 255, 0.92);
+	            border-color: var(--border-subtle);
+	        }
+	        .btn-toggle-disabled {
+	            background: rgba(34, 197, 94, 0.10);
+	            color: #bbf7d0;
+	            border-color: rgba(34, 197, 94, 0.55);
+	        }
+
+        /* =========================
+           SPINNER (AGGIUNGI UTENTE)
+           ========================= */
+        .spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.28);
+            border-top-color: #ffffff;
+            border-radius: 999px;
+            display: inline-block;
+            animation: spin 0.6s linear infinite;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+    </style>
+
+</head>
+<body>
+<!-- Vista autenticazione -->
+<div id="authView" class="app">
+    <header>
+        <div class="logo">
+            <div class="logo-circle"></div>
+            <div>
+                <h1>Sicura</h1>
+	                <div class="subtitle">Admin login</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Solo login (quando esiste almeno un admin) -->
+    <div id="loginContainer" class="auth-single-container" style="display:none;">
+        <div class="card" id="loginCard">
+            <div class="card-header">
+	                <div class="card-title">Admin login</div>
+                <div class="badge badge-state">Admin only</div>
+            </div>
+            <form id="loginForm">
+                <div class="form-field">
+                    <label for="loginUsername">Username</label>
+                    <input id="loginUsername" autocomplete="username" />
+                </div>
+                <div class="form-field">
+                    <label for="loginPassword">Password</label>
+                    <input id="loginPassword" type="password" autocomplete="current-password" />
+                </div>
+	                <button type="submit" class="btn-ok">Log in</button>
+                <div id="loginMsg" class="msg-error" style="display:none;"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Solo registrazione primo admin (quando non esiste ancora nessun admin) -->
+    <div id="registerContainer" class="auth-single-container" style="display:none;">
+        <div class="card" id="adminRegisterCard">
+            <div class="card-header">
+                <div class="card-title">Admin registration</div>
+                <div class="badge badge-state">First access</div>
+            </div>
+            <form id="adminRegisterForm">
+                <div class="form-field">
+                    <label for="adminRegUsername">Username</label>
+                    <input id="adminRegUsername" />
+                </div>
+                <div class="form-field">
+                    <label for="adminRegPassword">Password</label>
+                    <input id="adminRegPassword" type="password" />
+                </div>
+                <div class="form-field">
+                    <label for="adminRegPhone">Phone number</label>
+                    <input id="adminRegPhone" />
+                </div>
+                <div class="form-field">
+                    <label for="adminRegTelegram">Telegram username (without @)</label>
+                    <input id="adminRegTelegram" />
+                </div>
+                <button type="submit" class="btn-ok">Sign in</button>
+                <div id="adminRegMsg" class="msg-error" style="display:none;"></div>
+            </form>
+	        <div class="small-text">
+	                The first admin can register freely.
+	                After that, admin registration is allowed only for logged-in admins
+	                (attempts from this page will be rejected).
+	        </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vista dashboard (solo admin loggato) -->
+<div id="dashboardView" class="app" style="display:none;">
+    <header>
+        <div class="logo">
+            <div class="logo-circle"></div>
+            <div>
+	                <h1>Sicura</h1>
+	                <div class="subtitle">Access control</div>
+	            </div>
+	        </div>
+        <!-- Bottone logout -->
+	        <button id="logoutBtn" class="btn-ko" style="flex:0 0 auto; padding:6px 16px; max-width:140px;">
+	            Log out
+	        </button>
+    </header>
+
+    <div class="grid">
+        <!-- Colonna sinistra -->
+        <div class="col-left">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">System State</div>
+                    <div id="stateBadge" class="badge badge-state">WAITING</div>
+                </div>
+                <p id="stateText" class="status-text">Waiting for request…</p>
+                <div id="statePill" class="status-pill">
+                    <span class="dot"></span>
+	                    <span id="statePillText">No active request</span>
+                </div>
+
+                <div id="otpBox" style="margin-top:12px; display:none;">
+                    <p class="request-label">Last OTP generated</p>
+                    <p id="otpValue" class="request-value"></p>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:18px;">
+                <div class="card-header">
+                    <div class="card-title">Current request</div>
+                    <div class="badge badge-state">LIVE</div>
+                </div>
+                <div id="requestContent" class="request-body">
+                    <p class="request-value">No pending request.</p>
+                    <p style="color:var(--text-muted); font-size:13px;">
+                        Any request from unregistered users will appear here.
+                    </p>
+                </div>
+                <div class="buttons">
+                    <button id="btnOk" class="btn-ok btn-disabled" disabled>✔ Allow</button>
+                    <button id="btnKo" class="btn-ko btn-disabled" disabled>✖ Deny</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonna destra -->
+        <div class="col-right">
+	            <!-- Access log -->
+	            <div class="card scrollable-card log-card">
+	                <div class="card-header">
+	                    <div class="card-title">Access log</div>
+	                    <div class="badge badge-state">History</div>
+	                </div>
+
+                <div class="table-wrapper">
+                    <!-- header fisso -->
+                    <table class="table-header">
+                        <thead>
+	                        <tr>
+	                            <th>User</th>
+	                            <th>Decision</th>
+	                            <th>Source</th>
+	                            <th>Time</th>
+	                        </tr>
+                        </thead>
+                    </table>
+
+                    <!-- solo il corpo scrolla -->
+                    <div class="table-scroll-log">
+                        <table class="table-body">
+                            <tbody id="logBody">
+	                            <tr>
+	                                <td colspan="4">
+	                                    No events yet.
+	                                </td>
+	                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+
+	            <!-- User management -->
+	            <div class="card scrollable-card log-card">
+	                <div class="card-header">
+	                    <div class="card-title">User management</div>
+	                    <div class="badge badge-state">Admin</div>
+	                </div>
+
+                <form id="userCreateForm">
+                    <div class="form-field">
+	                        <label for="userCreateUsername">Username</label>
+                        <input id="userCreateUsername" />
+                    </div>
+                    <div class="form-field">
+	                        <label for="userCreateTelegram">Telegram username (without @)</label>
+                        <input id="userCreateTelegram" />
+                    </div>
+	                    <button type="submit" class="btn-ok">Add user</button>
+	                    <div id="userCreateMsg" class="msg-error" style="display:none;"></div>
+	                    <div id="userDeleteMsg" class="msg-error" style="display:none;"></div>
+	                </form>
+
+                <div class="table-wrapper" style="margin-top:10px;">
+                    <table class="table-header">
+                        <thead>
+                        <tr>
+	                            <th>User</th>
+                            <th>Telegram</th>
+	                            <th>Status</th>
+	                            <th>Action</th>
+                        </tr>
+                        </thead>
+                    </table>
+
+                    <div class="table-scroll-utenti">
+                        <table class="table-body">
+                            <tbody id="usersBody">
+                            <tr>
+                                <td colspan="4">
+	                                    No registered users.
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+	    // --- Helper autenticazione lato client ---
+	    let authToken = localStorage.getItem("authToken") || null;
+	    let statusTimer = null;
+	    let pendingMonitorTimer = null;
+	    let deleteMonitorTimer = null;
+	    const deletingUserIds = new Set();
+
+    const authView = document.getElementById("authView");
+    const dashboardView = document.getElementById("dashboardView");
+    const loginContainer = document.getElementById("loginContainer");
+    const registerContainer = document.getElementById("registerContainer");
+
+	    // helper per messaggi che spariscono da soli
+		    function showMessage(el, text, type = "error", timeoutMs = 3000) {
+		        if (!el) return;
+		        el.textContent = text;
+		        const classByType = {
+		            success: "msg-success",
+		            error: "msg-error",
+		            warning: "msg-warning",
+		            info: "msg-info",
+		        };
+		        el.className = classByType[type] || "msg-error";
+		        el.style.display = "block";
+		        el.dataset.persistent = timeoutMs <= 0 ? "1" : "0";
+
+		        if (el._timeoutId) {
+		            clearTimeout(el._timeoutId);
+		        }
+		        if (timeoutMs <= 0) return; // messaggio persistente
+		        el._timeoutId = setTimeout(() => {
+		            el.style.display = "none";
+		            el.dataset.persistent = "0";
+		        }, timeoutMs);
+		    }
+
+	    function formatCountdown(ms) {
+	        if (ms <= 0) return "00:00";
+	        const totalSec = Math.floor(ms / 1000);
+	        const min = Math.floor(totalSec / 60);
+	        const sec = totalSec % 60;
+	        return String(min).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
+	    }
+
+	    function showAuthView() {
+	        if (statusTimer) {
+	            clearInterval(statusTimer);
+	            statusTimer = null;
+	        }
+	        if (pendingMonitorTimer) {
+	            clearInterval(pendingMonitorTimer);
+	            pendingMonitorTimer = null;
+	        }
+	        if (deleteMonitorTimer) {
+	            clearInterval(deleteMonitorTimer);
+	            deleteMonitorTimer = null;
+	        }
+	        // Stop background watchers when logged out to avoid races with login.
+	        stopPendingWatch?.();
+	        stopDeleteWatch?.();
+	        authView.style.display = "flex";
+	        dashboardView.style.display = "none";
+	    }
+
+    function showDashboardView() {
+        authView.style.display = "none";
+        dashboardView.style.display = "flex";
+    }
+
+    // decide quale schermata (login vs registrazione primo admin) mostrare
+	    async function refreshAuthMode() {
+	        try {
+	            const res = await fetch("/api/auth/admin-status");
+            const data = await res.json();
+            if (data.hasAdmin) {
+                // esiste già almeno un admin -> SOLO login
+                if (loginContainer) loginContainer.style.display = "flex";
+                if (registerContainer) registerContainer.style.display = "none";
+            } else {
+                // nessun admin -> SOLO registrazione primo admin
+                if (loginContainer) loginContainer.style.display = "none";
+                if (registerContainer) registerContainer.style.display = "flex";
+            }
+	        } catch (e) {
+	            console.error("Error while checking admin status:", e);
+	            // fallback: mostro solo login
+	            if (loginContainer) loginContainer.style.display = "flex";
+	            if (registerContainer) registerContainer.style.display = "none";
+	        }
+	    }
+
+    async function apiFetch(url, options = {}) {
+        options.headers = options.headers || {};
+        if (authToken) {
+            options.headers["Authorization"] = "Bearer " + authToken;
+        }
+        const res = await fetch(url, options);
+	        if (res.status === 401 || res.status === 403) {
+	            // token non valido / scaduto
+	            authToken = null;
+	            localStorage.removeItem("authToken");
+	            await refreshAuthMode();
+	            showAuthView();
+	            throw new Error("Not authorized");
+	        }
+        return res;
+    }
+
+    // --- Riferimenti UI dashboard ---
+    const btnOk = document.getElementById("btnOk");
+    const btnKo = document.getElementById("btnKo");
+    const stateBadge = document.getElementById("stateBadge");
+    const stateText = document.getElementById("stateText");
+    const statePill = document.getElementById("statePill");
+    const statePillText = document.getElementById("statePillText");
+    const requestContent = document.getElementById("requestContent");
+    const logBody = document.getElementById("logBody");
+    const otpBox = document.getElementById("otpBox");
+    const otpValue = document.getElementById("otpValue");
+    const usersBody = document.getElementById("usersBody");
+
+    function setButtonsEnabled(enabled) {
+        if (enabled) {
+            btnOk.classList.remove("btn-disabled");
+            btnKo.classList.remove("btn-disabled");
+            btnOk.disabled = false;
+            btnKo.disabled = false;
+        } else {
+            btnOk.classList.add("btn-disabled");
+            btnKo.classList.add("btn-disabled");
+            btnOk.disabled = true;
+            btnKo.disabled = true;
+        }
+    }
+
+		    function renderStatus(systemState, currentRequest, lastOtp, lastOtpTime) {
+		        const canDecideFromWeb = !!(
+		            currentRequest && (!currentRequest.registered || currentRequest.enabled === false)
+		        );
+		        setButtonsEnabled(canDecideFromWeb);
+		        stateBadge.textContent = systemState;
+
+        let dot = statePill.querySelector(".dot");
+        dot.className = "dot";
+	        if (systemState === "ACCESS_GRANTED") dot.classList.add("green");
+	        else if (systemState === "ACCESS_DENIED") dot.classList.add("red");
+	        else dot.classList.add("blue");
+
+        if (lastOtp) {
+            otpBox.style.display = "block";
+            otpValue.textContent = `${lastOtp} (${lastOtpTime})`;
+        } else {
+            otpBox.style.display = "none";
+        }
+
+		        if (!currentRequest) {
+		            stateText.textContent = "Waiting for requests…";
+		            statePillText.textContent = "No active request";
+		            setButtonsEnabled(false);
+	            requestContent.innerHTML = `
+	        <p class="request-value">No pending request.</p>
+	        <p style="color:var(--text-muted); font-size:13px;">
+	          When the device sends a request, it will appear here.
+	        </p>`;
+		        } else {
+		            const isRegistered = !!currentRequest.registered;
+		            const isDisabled = currentRequest.enabled === false;
+		            const statusSuffix = isDisabled
+		                ? " (disabled)"
+		                : (!isRegistered ? " (unregistered)" : "");
+		            const displayUser = `${currentRequest.user || "Unknown"}${statusSuffix}`;
+
+		            if (isRegistered && !isDisabled) {
+		                stateText.textContent =
+		                    "Request from a registered user (handled via Telegram)";
+		                statePillText.textContent = "Request from " + displayUser;
+		                requestContent.innerHTML = `
+		          <p class="request-label">User</p>
+		          <p class="request-value">${displayUser}</p>
+		          <p class="request-label">Time</p>
+		          <p class="request-value">${currentRequest.timestamp}</p>
+		          <p class="small-text">
+		            ✅ This user is registered. They will approve or deny directly in Telegram.
+		            You cannot intervene from the dashboard.
+		          </p>
+		        `;
+		                setButtonsEnabled(false);   // 🔒 NIENTE conferma/nega da web
+		            } else if (isDisabled) {
+		                stateText.textContent =
+		                    "Request requires admin approval";
+		                statePillText.textContent = "Request from " + displayUser;
+		                requestContent.innerHTML = `
+		          <p class="request-label">User</p>
+		          <p class="request-value">${displayUser}</p>
+		          <p class="request-label">Time</p>
+		          <p class="request-value">${currentRequest.timestamp}</p>
+		          <p class="small-text">
+		            An admin must approve or deny this request.
+		            You can decide from the dashboard.
+		          </p>
+		        `;
+		                setButtonsEnabled(true);    // ✅ Admin può decidere
+		            } else {
+		                stateText.textContent = "Request requires admin approval";
+		                statePillText.textContent = "Request from " + displayUser;
+		                requestContent.innerHTML = `
+		          <p class="request-label">User</p>
+	          <p class="request-value">${displayUser}</p>
+	          <p class="request-label">Time</p>
+	          <p class="request-value">${currentRequest.timestamp}</p>
+		          <p class="small-text">
+		            This user is not registered. You can approve or deny access from the dashboard.
+		          </p>
+		        `;
+		                setButtonsEnabled(true);    // ✅ Admin può decidere
+		            }
+		        }
+		    }
+
+	    function renderLog(log) {
+	        if (!log || log.length === 0) {
+	            logBody.innerHTML = `
+	        <tr><td colspan="4" style="color:var(--text-muted); text-align:center;">
+	          No events yet.
+	        </td></tr>`;
+	            return;
+	        }
+
+	        logBody.innerHTML = "";
+	        log.slice().reverse().forEach(entry => {
+	            const tr = document.createElement("tr");
+	            const decisionMap = {
+	                // new codes
+	                WAITING: "WAITING",
+	                UNREGISTERED: "UNREGISTERED",
+	                DISABLED: "DISABLED",
+	                ACCESS_GRANTED: "ACCESS_GRANTED",
+	                ACCESS_DENIED: "ACCESS_DENIED",
+	                // legacy codes
+	                IN_ATTESA: "WAITING",
+	                NON_REGISTRATO: "UNREGISTERED",
+	                DISABILITATO: "DISABLED",
+	                ACCESSO_CONSENTITO: "ACCESS_GRANTED",
+	                ACCESSO_NEGATO: "ACCESS_DENIED",
+	                RICHIESTA_IN_ATTESA: "WAITING",
+	                RICHIESTA_NON_REGISTRATO: "UNREGISTERED",
+	                RICHIESTA_UTENTE_DISABILITATO: "DISABLED",
+	            };
+
+	            const decision = decisionMap[entry.decision] || entry.decision;
+
+	            let decisionClass = "";
+	            if (decision === "OK" || decision === "ACCESS_GRANTED") decisionClass = "log-decision-ok";
+	            else if (decision === "KO" || decision === "ACCESS_DENIED") decisionClass = "log-decision-ko";
+	            else if (decision === "WAITING" || decision === "UNREGISTERED" || decision === "DISABLED") {
+	                decisionClass = "log-decision-pending";
+	            }
+
+            tr.innerHTML = `
+        <td>${entry.user || "-"}</td>
+	        <td class="${decisionClass}">${decision}</td>
+        <td>${entry.source || "-"}</td>
+        <td>${entry.time}</td>
+      `;
+            logBody.appendChild(tr);
+        });
+    }
+
+    async function fetchStatus() {
+        try {
+            const res = await apiFetch("/api/status");
+            const data = await res.json();
+            renderStatus(data.systemState, data.currentRequest, data.lastOtp, data.lastOtpTime);
+            renderLog(data.log);
+	        } catch (err) {
+	            console.error("Error while fetching status:", err);
+	        }
+	    }
+
+    async function sendDecision(decision) {
+        try {
+            await apiFetch("/api/decision", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ decision })
+            });
+            await fetchStatus();
+	        } catch (err) {
+	            console.error("Error while sending decision:", err);
+	        }
+	    }
+
+    btnOk.addEventListener("click", () => sendDecision("OK"));
+    btnKo.addEventListener("click", () => sendDecision("KO"));
+
+    function startStatusPolling() {
+        if (statusTimer) clearInterval(statusTimer);
+        fetchStatus();
+        statusTimer = setInterval(fetchStatus, 2000);
+    }
+
+	    // ---------- User management ----------
+		    function renderUsers(users, pendingDeletes = []) {
+		        const pendingByUserId = new Map(
+		            (pendingDeletes || []).map((p) => [String(p.userId), p])
+		        );
+
+		        if (!users || users.length === 0) {
+		            usersBody.innerHTML = `
+		        <tr>
+		          <td colspan="4" style="color:var(--text-muted); text-align:center;">
+		            No registered users.
+	          </td>
+	        </tr>`;
+	            return;
+	        }
+
+	        usersBody.innerHTML = "";
+	        users.forEach(u => {
+		            const tr = document.createElement("tr");
+		            const isEnabled = !!u.enabled;
+		            const pendingDelete = pendingByUserId.get(String(u.id)) || null;
+		            const isDeleting = deletingUserIds.has(String(u.id)) || (pendingDelete && pendingDelete.status === "PENDING");
+		            tr.innerHTML = `
+		      <td>${u.username}</td>
+		      <td>${u.telegramUsername || "-"}</td>
+		      <td>${isEnabled ? "Enabled" : "Disabled"}</td>
+		      <td>
+		        <div class="user-actions">
+		          <button
+		            data-user-id="${u.id}"
+		            data-enabled="${isEnabled ? "1" : "0"}"
+		            class="btn-toggle ${isEnabled ? "btn-toggle-enabled" : "btn-toggle-disabled"}">
+		            ${isEnabled ? "Disable" : "Enable"}
+		          </button>
+		          <button
+		            data-delete-id="${u.id}"
+		            class="btn-toggle btn-toggle-delete"
+		            ${isDeleting ? "disabled" : ""}>
+		            ${isDeleting ? "Deleting…" : "Delete"}
+		          </button>
+		        </div>
+		      </td>
+		    `;
+	            usersBody.appendChild(tr);
+	        });
+
+
+	        usersBody.querySelectorAll("button[data-user-id]").forEach(btn => {
+	            btn.addEventListener("click", async () => {
+	                const id = btn.getAttribute("data-user-id");
+	                if (deletingUserIds.has(String(id))) return;
+	                const enabled = btn.getAttribute("data-enabled") === "1";
+	                try {
+	                    await apiFetch(`/api/users/${id}`, {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ enabled: !enabled })
+                    });
+                    await fetchUsers();
+                } catch (e) {
+	                console.error("Error while toggling user:", e);
+                }
+            });
+        });
+		        // Delete
+		        usersBody.querySelectorAll("button[data-delete-id]").forEach(btn => {
+		            btn.addEventListener("click", async () => {
+		                const id = btn.getAttribute("data-delete-id");
+		                if (btn.disabled) return;
+		                if (!confirm("Are you sure you want to delete this user?")) return;
+
+                try {
+                    const res = await apiFetch(`/api/users/${id}`, { method: "DELETE" });
+                    const data = await res.json();
+
+	                    if (!res.ok) {
+	                        console.error("Error while deleting user:", data.error);
+	                        showMessage(userDeleteMsg, data.error || "Deletion failed.", "error", 8000);
+	                        return;
+	                    }
+
+		                    if (data.pending) {
+		                        // ✅ mostra stato e avvia watcher
+		                        deletingUserIds.add(String(id));
+		                        btn.disabled = true;
+		                        btn.textContent = "Deleting…";
+		                        showMessage(userDeleteMsg, "🕒 Deletion started. Waiting for device confirmation…", "warning", 0);
+		                        startDeleteWatch(id, userDeleteMsg);
+		                        return;
+		                    }
+
+                    // (se mai ritornasse ok immediato)
+                    await fetchUsers();
+
+	                } catch (e) {
+	                    console.error("Network error while deleting user:", e);
+	                    showMessage(userDeleteMsg, "Network error while deleting the user.", "error", 8000);
+	                }
+	            });
+	        });
+
+
+    }
+
+			    async function fetchUsers() {
+			        try {
+			            const [usersRes, pendingRes] = await Promise.all([
+			                apiFetch("/api/users"),
+			                apiFetch("/api/pending-deletes"),
+			            ]);
+			            const usersData = await usersRes.json();
+			            const pendingData = await pendingRes.json();
+
+			            const activeDelete = (pendingData.pending || []).find(
+			                (p) => p && p.status === "PENDING" && p.userId != null
+			            ) || null;
+			            if (activeDelete) {
+			                // Ensure the deletion timer is shown after logout/login (no reload needed)
+			                if (!deleteWatchTimer || deleteWatchUserId !== String(activeDelete.userId)) {
+			                    const remainingMs = typeof activeDelete.expiresAt === "number"
+			                        ? (activeDelete.expiresAt - Date.now())
+			                        : null;
+			                    const countdownText = remainingMs === null
+			                        ? ""
+			                        : ` (time remaining: ${formatCountdown(remainingMs)})`;
+			                    const base = activeDelete.message || "Deletion in progress…";
+			                    showMessage(userDeleteMsg, base + countdownText, "warning", 0);
+			                    startDeleteWatch(activeDelete.userId, userDeleteMsg);
+			                }
+			            } else if (deleteWatchTimer) {
+			                stopDeleteWatch();
+			            }
+
+			            (pendingData.pending || []).forEach((p) => {
+			                if (p && p.status === "PENDING" && p.userId != null) {
+			                    deletingUserIds.add(String(p.userId));
+			                }
+			            });
+
+			            renderUsers(usersData.users || [], pendingData.pending || []);
+			        } catch (e) {
+			            console.error("Error while loading users:", e);
+			        }
+			    }
+
+    const userCreateForm = document.getElementById("userCreateForm");
+    const userCreateMsg = document.getElementById("userCreateMsg");
+    const userDeleteMsg = document.getElementById("userDeleteMsg");
+
+	    //gestione eliminazione utente
+	    let deleteWatchTimer = null;
+	    let lastDeleteSnapshot = null;
+	    let deleteWatchUserId = null;
+
+	    function stopDeleteWatch() {
+	        if (deleteWatchTimer) clearInterval(deleteWatchTimer);
+	        deleteWatchTimer = null;
+	        deleteWatchUserId = null;
+	    }
+
+		    function startDeleteWatch(userId, uiMsgEl) {
+		        stopDeleteWatch();
+		        lastDeleteSnapshot = null;
+		        deleteWatchUserId = String(userId);
+
+	        deleteWatchTimer = setInterval(async () => {
+	            try {
+	                const res = await apiFetch("/api/pending-deletes");
+	                const data = await res.json();
+
+	                const p = (data.pending || []).find(x => String(x.userId) === String(userId));
+	                if (!p) return; // non ancora o già ripulito
+
+	                const remainingMs = typeof p.expiresAt === "number" ? (p.expiresAt - Date.now()) : null;
+	                const countdownBucket = remainingMs === null ? "" : Math.max(0, Math.floor(remainingMs / 1000));
+	                const snapshot = `${p.status}|${p.message || ""}|${countdownBucket}`;
+	                if (snapshot === lastDeleteSnapshot) return;
+	                lastDeleteSnapshot = snapshot;
+
+		                if (p.status === "PENDING") {
+		                    deletingUserIds.add(String(userId));
+		                    const countdownText = remainingMs === null ? "" : ` (time remaining: ${formatCountdown(remainingMs)})`;
+		                    const base = p.message || "Deletion in progress…";
+		                    showMessage(uiMsgEl, base + countdownText, "warning", 0);
+		                }
+
+	                if (p.status === "DONE") {
+	                    showMessage(uiMsgEl, p.message || "✅ Deleted.", "success", 8000);
+	                    deletingUserIds.delete(String(userId));
+	                    stopDeleteWatch();
+	                    await fetchUsers(); // qui sparisce davvero
+	                }
+
+	                if (p.status === "FAILED") {
+	                    showMessage(uiMsgEl, p.message || "⛔ Deletion failed.", "error", 8000);
+	                    deletingUserIds.delete(String(userId));
+	                    stopDeleteWatch();
+	                    await fetchUsers(); // resta, riabiliti pulsanti
+	                }
+	            } catch (e) {
+	                console.error("delete watch error:", e);
+	            }
+	        }, 1200);
+	    }
+
+
+    //logica per accompagnare utente nella registrazione
+    let pendingWatchTimer = null;
+    let lastSnapshot = null;
+
+	    async function pendingTick(telegramUsername) {
+	        const res = await apiFetch("/api/pending");
+	        const data = await res.json();
+
+	        const p = (data.pending || []).find(u => u.telegramUsername === telegramUsername);
+	        if (!p) return; // non ancora / già rimosso
+
+	        const remainingMs = typeof p.expiresAt === "number" ? (p.expiresAt - Date.now()) : null;
+	        // include una parte di countdown nello snapshot per aggiornare l'UI (almeno 1 volta al secondo)
+	        const countdownBucket = remainingMs === null ? "" : Math.max(0, Math.floor(remainingMs / 1000));
+	        const snapshot = `${p.status}|${p.faceOk}|${!!p.telegramChatId}|${p.message || ""}|${countdownBucket}`;
+	        if (snapshot === lastSnapshot) return;
+	        lastSnapshot = snapshot;
+
+		        const countdownText = remainingMs === null ? "" : ` (time remaining: ${formatCountdown(remainingMs)})`;
+
+		        if (p.status !== "DONE" && p.status !== "FAILED") {
+		            const base = p.message || "Registration in progress…";
+		            showMessage(userCreateMsg, base + countdownText, "info", 0);
+		        } else if (p.message) {
+		            const type = (p.status === "FAILED") ? "error" : "success";
+		            showMessage(userCreateMsg, p.message, type, 8000);
+		        }
+
+        if (p.status === "DONE" || p.status === "FAILED") {
+            stopPendingWatch();
+
+            // sblocca form
+            const usernameInput = document.getElementById("userCreateUsername");
+            const telegramInput = document.getElementById("userCreateTelegram");
+            const submitBtn = userCreateForm.querySelector('button[type="submit"]');
+
+            usernameInput.disabled = false;
+            telegramInput.disabled = false;
+	            submitBtn.disabled = false;
+	            submitBtn.textContent = "Add user";
+
+            // ✅ aggiorna tabella subito
+	            fetchUsers().catch(e => console.error("Error refreshing users:", e));
+	        }
+	    }
+
+	    function startPendingWatch(telegramUsername) {
+	        stopPendingWatch();
+	        lastSnapshot = null;
+
+	        // ✅ tick immediato (niente attesa 1.5s)
+	        pendingTick(telegramUsername).catch(e => console.error("pending tick error:", e));
+
+	        // ✅ polling più rapido
+	        pendingWatchTimer = setInterval(() => {
+	            pendingTick(telegramUsername).catch(e => console.error("pending watch error:", e));
+	        }, 500); // 0.5s invece di 1.5s
+	    }
+
+    function stopPendingWatch() {
+        if (pendingWatchTimer) clearInterval(pendingWatchTimer);
+        pendingWatchTimer = null;
+    }
+
+
+	    userCreateForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        userCreateMsg.style.display = "none";
+
+        const usernameInput = document.getElementById("userCreateUsername");
+        const telegramInput = document.getElementById("userCreateTelegram");
+        const submitBtn = userCreateForm.querySelector('button[type="submit"]');
+
+        const username = usernameInput.value.trim();
+        const telegramUsername = telegramInput.value.trim();
+
+	        if (!username || !telegramUsername) {
+	            showMessage(userCreateMsg, "Please fill in all fields.");
+	            return;
+	        }
+
+        // 🔒 Blocca SUBITO il form e mostra la rotella
+        usernameInput.disabled = true;
+        telegramInput.disabled = true;
+	        submitBtn.disabled = true;
+	        submitBtn.innerHTML = `<span class="spinner"></span> Working…`;
+
+        try {
+            // 🔍 Controllo se esiste già un pending sul server
+            const pendingRes = await apiFetch("/api/pending");
+            const pendingData = await pendingRes.json();
+
+	            const hasActivePending = (pendingData.pending || []).some(
+	                (p) => p.status !== "DONE" && p.status !== "FAILED"
+	            );
+	            if (hasActivePending) {
+	                // esiste già una registrazione in corso → non avvio un'altra
+	                showMessage(
+	                    userCreateMsg,
+	                    "A registration is already in progress. Please complete it before starting another one.",
+	                    "warning"
+	                );
+
+                // riabilito form e bottone
+                usernameInput.disabled = false;
+                telegramInput.disabled = false;
+	                submitBtn.disabled = false;
+	                submitBtn.textContent = "Add user";
+	                return;
+	            }
+
+            // 🔄 avvio davvero la procedura START_ENROLL
+            const res = await apiFetch("/api/users", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, telegramUsername })
+            });
+
+            const data = await res.json();
+
+	            if (!res.ok || !data.ok) {
+	                showMessage(
+	                    userCreateMsg,
+	                    data.error || "Failed to start registration."
+	                );
+
+                // errore → sblocco tutto
+                usernameInput.disabled = false;
+                telegramInput.disabled = false;
+	                submitBtn.disabled = false;
+	                submitBtn.textContent = "Add user";
+	                return;
+	            }
+
+            // // ✅ SUCCESSO
+	        //     showMessage(
+	        //         userCreateMsg,
+	        //         data.message ||
+	        //         "Registration started. The user must enroll their face on the device and send /start to the Telegram bot.",
+	        //         "success",
+	        //         8000
+	        //     );
+
+            startPendingWatch(telegramUsername);
+            userCreateForm.reset();
+
+            // 👉 da qui in poi LASCIAMO BLOCCATO il form,
+            // perché c'è una registrazione in corso.
+	            submitBtn.disabled = true;
+	            usernameInput.disabled = true;
+	            telegramInput.disabled = true;
+	            submitBtn.innerHTML = `<span class="spinner"></span> Registration in progress…`;
+
+
+	        } catch (err) {
+	            console.error(err);
+	            showMessage(
+	                userCreateMsg,
+	                "Network error during registration."
+	            );
+
+            // errore di rete → sblocco tutto
+            usernameInput.disabled = false;
+            telegramInput.disabled = false;
+	            submitBtn.disabled = false;
+	            submitBtn.textContent = "Add user";
+	        }
+	    });
+
+	    (async () => {
+	        try {
+	            const res = await apiFetch("/api/pending");
+	            const data = await res.json();
+	            const active = (data.pending || []).find(
+	                (p) => p.status !== "DONE" && p.status !== "FAILED"
+	            );
+	            if (active) startPendingWatch(active.telegramUsername);
+	        } catch (e) {
+	            console.error("Error while checking pending registration on load:", e);
+	        }
+	    })();
+
+
+    // ---------- Gestione form login / registrazione admin ----------
+
+    const loginForm = document.getElementById("loginForm");
+    const loginMsg = document.getElementById("loginMsg");
+    const adminRegisterForm = document.getElementById("adminRegisterForm");
+    const adminRegMsg = document.getElementById("adminRegMsg");
+
+	    loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        loginMsg.style.display = "none";
+        const username = document.getElementById("loginUsername").value.trim();
+        const password = document.getElementById("loginPassword").value;
+
+	        if (!username || !password) {
+	            showMessage(loginMsg, "Please enter username and password.");
+	            return;
+	        }
+
+        try {
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+	            const data = await res.json();
+	            if (!res.ok) {
+	                showMessage(loginMsg, data.error || "Login failed.");
+	                return;
+	            }
+	            authToken = data.token;
+	            localStorage.setItem("authToken", authToken);
+	            loginForm.reset();
+	            showDashboardView();
+	            startStatusPolling();
+	            startPendingMonitor();
+	            startDeleteMonitor();
+	            fetchUsers();
+	        } catch (err) {
+	            showMessage(loginMsg, "Network error during login.");
+	        }
+	    });
+
+    // registrazione primo admin + login automatico
+	    adminRegisterForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        adminRegMsg.style.display = "none";
+
+        const username = document.getElementById("adminRegUsername").value.trim();
+        const password = document.getElementById("adminRegPassword").value;
+        const phone = document.getElementById("adminRegPhone").value.trim();
+        const telegramUsername = document.getElementById("adminRegTelegram").value.trim();
+
+	        if (!username || !password || !phone || !telegramUsername) {
+	            showMessage(adminRegMsg, "Please fill in all fields.");
+	            return;
+	        }
+
+        try {
+            // 1) registra il primo admin
+            const res = await fetch("/api/auth/register-admin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password, phone, telegramUsername })
+            });
+	            const data = await res.json();
+	            if (!res.ok) {
+	                showMessage(adminRegMsg, data.error || "Admin registration failed.");
+	                return;
+	            }
+
+            // 2) login automatico con le stesse credenziali
+            const loginRes = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password })
+            });
+	            const loginData = await loginRes.json();
+	            if (!loginRes.ok) {
+	                showMessage(
+	                    adminRegMsg,
+	                    "Registration succeeded, but login failed. Please try logging in from the login form."
+	                );
+	                return;
+	            }
+
+	            authToken = loginData.token;
+	            localStorage.setItem("authToken", authToken);
+	            adminRegisterForm.reset();
+
+	            showDashboardView();
+	            startStatusPolling();
+	            startPendingMonitor();
+	            startDeleteMonitor();
+	            fetchUsers();
+	        } catch (err) {
+	            showMessage(
+	                adminRegMsg,
+	                "Network error during registration."
+	            );
+	        }
+	    });
+	    // 🔄 Controlla periodicamente se ci sono pending attivi
+		    async function monitorPendingState() {
+		        try {
+		            const res = await apiFetch("/api/pending");
+		            const data = await res.json();
+		            // Considera "attivo" solo un pending non completato/non fallito.
+		            // Sul server i pending completati restano per ~15s per mostrare il messaggio.
+		            const activePending = (data.pending || []).find(
+		                (p) => p.status !== "DONE" && p.status !== "FAILED"
+		            );
+		            const hasActivePending = !!activePending;
+		            const terminalPending = hasActivePending
+		                ? null
+		                : (data.pending || []).find(
+		                    (p) => p && (p.status === "DONE" || p.status === "FAILED")
+		                ) || null;
+
+	            const usernameInput = document.getElementById("userCreateUsername");
+	            const telegramInput = document.getElementById("userCreateTelegram");
+	            const submitBtn = userCreateForm.querySelector('button[type="submit"]');
+
+		            if (!hasActivePending) {
+		                // ✅ Nessun pending → riabilito tutto
+		                usernameInput.disabled = false;
+		                telegramInput.disabled = false;
+		                submitBtn.disabled = false;
+		                submitBtn.textContent = "Add user";
+		            } else {
+		                // 🔒 Pending attivo → tengo bloccato tutto con spinner
+		                usernameInput.disabled = true;
+		                telegramInput.disabled = true;
+		                submitBtn.disabled = true;
+		                submitBtn.innerHTML = `<span class="spinner"></span> Registration in progress…`;
+		            }
+
+		            // If registration reached a terminal state, show the final message even if the watch was stopped
+		            // (we treat DONE/FAILED as non-active to re-enable the form).
+		            if (terminalPending) {
+		                const type = terminalPending.status === "DONE" ? "success" : "error";
+		                showMessage(
+		                    userCreateMsg,
+		                    terminalPending.message ||
+		                    (terminalPending.status === "DONE"
+		                        ? "✅ Registration completed."
+		                        : "⛔ Registration failed."),
+		                    type,
+		                    8000
+		                );
+		                stopPendingWatch();
+		                fetchUsers().catch(() => {});
+		            }
+
+		            // Ensure the detailed registration watcher is started after login (no page reload needed).
+		            if (hasActivePending && activePending?.telegramUsername && !pendingWatchTimer) {
+		                startPendingWatch(activePending.telegramUsername);
+		            }
+		            if (!hasActivePending && pendingWatchTimer) {
+		                stopPendingWatch();
+		            }
+
+		            // If a persistent "in progress" banner was shown, hide it once there's no pending at all.
+		            if (!hasActivePending && !terminalPending && userCreateMsg?.dataset?.persistent === "1") {
+		                if (userCreateMsg._timeoutId) clearTimeout(userCreateMsg._timeoutId);
+		                userCreateMsg.style.display = "none";
+		                userCreateMsg.dataset.persistent = "0";
+		            }
+		        } catch (err) {
+		            console.error("Error while checking pending registration:", err);
+		        }
+		    }
+
+		    function startPendingMonitor() {
+		        if (pendingMonitorTimer) clearInterval(pendingMonitorTimer);
+		        monitorPendingState().catch(() => {});
+		        pendingMonitorTimer = setInterval(() => {
+		            monitorPendingState().catch(() => {});
+		        }, 1000);
+		    }
+
+		    async function monitorDeleteState() {
+		        try {
+		            const res = await apiFetch("/api/pending-deletes");
+		            const data = await res.json();
+
+		            const pendingList = data.pending || [];
+		            const activeDelete = pendingList.find(
+		                (p) => p && p.status === "PENDING" && p.userId != null
+		            ) || null;
+
+		            // If there is no active delete, show a terminal message (DONE/FAILED) if present,
+		            // otherwise hide the message box to avoid a stale "Deletion in progress…" banner.
+		            if (!activeDelete) {
+		                const terminal = pendingList.find(
+		                    (p) => p && (p.status === "DONE" || p.status === "FAILED") && p.userId != null
+		                ) || null;
+
+		                if (terminal) {
+		                    const type = terminal.status === "DONE" ? "success" : "error";
+		                    showMessage(
+		                        userDeleteMsg,
+		                        terminal.message || (terminal.status === "DONE" ? "✅ Deleted." : "⛔ Deletion failed."),
+		                        type,
+		                        8000
+		                    );
+		                    deletingUserIds.delete(String(terminal.userId));
+		                    stopDeleteWatch();
+		                    return;
+		                }
+
+		                // nothing to show
+		                deletingUserIds.clear();
+		                stopDeleteWatch();
+		                if (userDeleteMsg) {
+		                    if (userDeleteMsg._timeoutId) clearTimeout(userDeleteMsg._timeoutId);
+		                    userDeleteMsg.style.display = "none";
+		                }
+		                return;
+		            }
+
+		            if (activeDelete) {
+		                const remainingMs = typeof activeDelete.expiresAt === "number"
+		                    ? (activeDelete.expiresAt - Date.now())
+		                    : null;
+		                const countdownText = remainingMs === null
+		                    ? ""
+		                    : ` (time remaining: ${formatCountdown(remainingMs)})`;
+		                const base = activeDelete.message || "Deletion in progress…";
+
+		                deletingUserIds.add(String(activeDelete.userId));
+		                showMessage(userDeleteMsg, base + countdownText, "warning", 0);
+
+		                if (!deleteWatchTimer || deleteWatchUserId !== String(activeDelete.userId)) {
+		                    startDeleteWatch(activeDelete.userId, userDeleteMsg);
+		                }
+		            }
+		        } catch (e) {
+		            // ignore: apiFetch already handles auth invalidation
+		        }
+		    }
+
+		    function startDeleteMonitor() {
+		        if (deleteMonitorTimer) clearInterval(deleteMonitorTimer);
+		        monitorDeleteState().catch(() => {});
+		        deleteMonitorTimer = setInterval(() => {
+		            monitorDeleteState().catch(() => {});
+		        }, 1000);
+		    }
+
+
+
+    const logoutBtn = document.getElementById("logoutBtn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+            authToken = null;
+            localStorage.removeItem("authToken");
+            await refreshAuthMode();
+            showAuthView();
+        });
+    }
+
+    // all'avvio: verifico il token PRIMA di mostrare la dashboard
+	    async function init() {
+	        if (authToken) {
+	            try {
+	                // se il token è valido questa chiamata va a buon fine
+	                await apiFetch("/api/status");
+	                showDashboardView();
+	                startStatusPolling();
+	                startPendingMonitor();
+	                startDeleteMonitor();
+	                fetchUsers();
+	                return;
+	            } catch (e) {
+	                // token non valido: apiFetch ha già pulito tutto
+	                authToken = null;
+	            }
+	        }
+
+        // nessun token valido -> modalità autenticazione
+        await refreshAuthMode();
+        showAuthView();
+    }
+
+    init();
+</script>
+</body>
+</html>

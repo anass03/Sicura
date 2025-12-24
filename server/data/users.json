@@ -1,0 +1,15 @@
+{
+  "admins": [
+    {
+      "id": "adm_9oo10nf0p0lmj77yzc2",
+      "username": "admin",
+      "passwordHash": "$2b$10$T6hBB//xa2ZIvwO7RyaiReMvhnD8BUJzA4azBNnH77A1j46smfTly",
+      "phone": "3208653097",
+      "telegramUsername": "anass003",
+      "telegramChatId": 340098936,
+      "enabled": true,
+      "sessionId": "381e984e-1f81-48c5-9d8b-9dd7a52f9328"
+    }
+  ],
+  "users": []
+}
