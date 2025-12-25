@@ -8,7 +8,7 @@ from ryu.app.wsgi import WSGIApplication
 
 from firewall_api import FIREWALL_INSTANCE_NAME, FirewallAPIController
 from firewall_logic import FirewallLogic
-from of_helpers import add_flow, delete_flows
+from of_helpers import add_flow, delete_flows, add_drop_flow_for_port, delete_drop_flow_for_port
 
 # Network configuration (match lab startup scripts)
 MQTT_HOSTS = ["10.0.10.20"]
@@ -25,6 +25,8 @@ DOS_WINDOW = 5                 # seconds
 DOS_BLOCK_SECONDS = 60
 
 DEFAULT_BLOCK_SECONDS = 60
+DEFAULT_PORT_BLOCK_PRIORITY = 480
+OVERRIDE_PORT_BLOCK_PRIORITY = 600
 
 
 class SDNFirewall(app_manager.RyuApp):
@@ -82,6 +84,31 @@ class SDNFirewall(app_manager.RyuApp):
             match = dp.ofproto_parser.OFPMatch(eth_type=0x0800, ipv4_src=ip)
             delete_flows(dp, match)
         return {"removed": True, "ip": ip}
+
+    def api_block_port(self, port: int, scope: str = "mqtt", seconds=None, override_allow: bool = False):
+        dp = self.datapath
+        if not dp:
+            return {"error": "datapath not ready"}
+        duration = seconds or DEFAULT_BLOCK_SECONDS
+        expires = self._block_port(dp, port, scope, duration, override_allow, reason="MANUAL_PORT_BLOCK")
+        return {
+            "port": port,
+            "scope": scope,
+            "expires_at": expires,
+            "override_allow": bool(override_allow),
+            "installed": True
+        }
+
+    def api_unblock_port(self, port: int, scope: str = "mqtt", override_allow=None):
+        removed_entries = self.logic.unblock_port(port, scope, override_allow, reason="MANUAL_PORT_UNBLOCK")
+        if not removed_entries:
+            return {"removed": False, "port": port, "scope": scope}
+        dp = self.datapath
+        if dp:
+            targets = MQTT_HOSTS if scope == "mqtt" else [None]
+            for target in targets:
+                delete_drop_flow_for_port(dp, port, scope, mqtt_ip=target)
+        return {"removed": True, "port": port, "scope": scope}
 
     # ------------------ OpenFlow setup ------------------
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
@@ -150,6 +177,17 @@ class SDNFirewall(app_manager.RyuApp):
                 match = dp.ofproto_parser.OFPMatch(eth_type=0x0800, ipv4_src=ip)
                 delete_flows(dp, match)
                 self.logic.log_event("UNBLOCK_IP", ip=ip, reason="timeout")
+
+            expired_ports = self.logic.cleanup_expired_port_blocks()
+            for entry in expired_ports:
+                targets = MQTT_HOSTS if entry["scope"] == "mqtt" else [None]
+                for target in targets:
+                    delete_drop_flow_for_port(dp, entry["port"], entry["scope"], mqtt_ip=target)
+                self.logic.log_event("PORT_UNBLOCKED",
+                                     port=entry["port"],
+                                     scope=entry["scope"],
+                                     override_allow=entry.get("override_allow", False),
+                                     reason="timeout")
 
             # Poll flow stats for MQTT traffic
             req = dp.ofproto_parser.OFPFlowStatsRequest(dp)
@@ -259,8 +297,20 @@ class SDNFirewall(app_manager.RyuApp):
         self.logger.warning("Blocking %s for %ss due to %s", ip, seconds, reason)
         return expires
 
+    def _block_port(self, datapath, port: int, scope: str, seconds: int, override_allow: bool, reason: str):
+        expires = self.logic.block_port(port, scope=scope, seconds=seconds, override_allow=override_allow, reason=reason)
+        priority = OVERRIDE_PORT_BLOCK_PRIORITY if override_allow else DEFAULT_PORT_BLOCK_PRIORITY
+        targets = MQTT_HOSTS if scope == "mqtt" else [None]
+        for target in targets:
+            add_drop_flow_for_port(datapath, port, scope, mqtt_ip=target, hard_timeout=seconds, priority=priority)
+        self.logger.warning("Blocking port %s scope=%s for %ss (override_allow=%s) due to %s",
+                            port, scope, seconds, override_allow, reason)
+        return expires
+
     def _estimate_active_rules(self):
-        # Base rules: table-miss + demo block + dynamic blocks
-        base = 2
-        dynamic = len(self.logic.blocked_ips)
-        return base + dynamic
+        base_rules = 1  # table miss
+        base_rules += len(MQTT_HOSTS)  # send TCP to controller
+        base_rules += 1  # demo block 2020
+        base_rules += len(MQTT_HOSTS) * len(MQTT_PORTS)  # allow rules
+        dynamic = len(self.logic.blocked_ips) + len(self.logic.blocked_ports)
+        return base_rules + dynamic

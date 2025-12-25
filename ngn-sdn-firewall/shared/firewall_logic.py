@@ -1,6 +1,6 @@
 import threading
 from collections import defaultdict, deque
-from typing import Deque, Dict, List, Optional
+from typing import Deque, Dict, List, Optional, Tuple
 
 from of_helpers import now
 
@@ -34,6 +34,7 @@ class FirewallLogic:
         self.events: Deque[Dict] = deque(maxlen=500)
         self.event_counters: Dict[str, int] = defaultdict(int)
         self.blocked_ips: Dict[str, Dict] = {}
+        self.blocked_ports: Dict[Tuple[str, int, bool], Dict] = {}
 
         # Statistics
         self.traffic_to_mqtt = {"packets": 0, "bytes": 0}
@@ -121,6 +122,59 @@ class FirewallLogic:
                     self.blocked_ips.pop(ip, None)
         return expired
 
+    # --- Port blocking ---
+    def block_port(self,
+                   port: int,
+                   scope: str = "mqtt",
+                   seconds: Optional[int] = None,
+                   override_allow: bool = False,
+                   reason: str = "manual"):
+        expires_at = now() + (seconds if seconds else self.block_seconds)
+        key = (scope, int(port), bool(override_allow))
+        entry = {
+            "port": int(port),
+            "scope": scope,
+            "override_allow": bool(override_allow),
+            "expires_at": expires_at,
+        }
+        with self.lock:
+            self.blocked_ports[key] = entry
+        self.log_event(
+            "PORT_BLOCKED",
+            port=int(port),
+            scope=scope,
+            seconds=seconds or self.block_seconds,
+            override_allow=bool(override_allow),
+            reason=reason,
+        )
+        return expires_at
+
+    def unblock_port(self, port: int, scope: str = "mqtt", override_allow: Optional[bool] = None, reason: str = "manual"):
+        removed = []
+        with self.lock:
+            for key in list(self.blocked_ports.keys()):
+                k_scope, k_port, k_override = key
+                if k_port == int(port) and k_scope == scope and (override_allow is None or k_override == bool(override_allow)):
+                    removed.append(self.blocked_ports.pop(key))
+        for entry in removed:
+            self.log_event(
+                "PORT_UNBLOCKED",
+                port=entry["port"],
+                scope=entry["scope"],
+                override_allow=entry["override_allow"],
+                reason=reason,
+            )
+        return removed
+
+    def cleanup_expired_port_blocks(self):
+        now_ts = now()
+        expired = []
+        with self.lock:
+            for key, data in list(self.blocked_ports.items()):
+                if now_ts >= data.get("expires_at", 0):
+                    expired.append(self.blocked_ports.pop(key))
+        return expired
+
     def update_flow_counters(self, flow_stats):
         total_packets = 0
         total_bytes = 0
@@ -156,6 +210,7 @@ class FirewallLogic:
                 "mqtt_ports": list(self.mqtt_ports),
                 "event_counters": dict(self.event_counters),
                 "blocked_ips": self.blocked_ips.copy(),
+                "blocked_ports": list(self.blocked_ports.values()),
                 "traffic_to_mqtt": dict(self.traffic_to_mqtt),
                 "top_talkers": list(self.top_talkers),
             }

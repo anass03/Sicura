@@ -36,7 +36,7 @@ kathara lstart
 ```
 kathara connect ctrl
 ```
-Il controller parte con `ryu-manager /shared/sdn_firewall.py` e API REST su `0.0.0.0:8080` (raggiungibile dal host via `kathara connect` o via interfaccia MGMT `10.0.0.1`).
+Il controller parte con `ryu-manager /shared/sdn_firewall.py` e API REST su `0.0.0.0:8080` nel container. Per raggiungerla dal host senza route verso `10.0.0.0/24`, usa il proxy host `http://127.0.0.1:18080` descritto sotto (dentro il lab resta disponibile anche `http://10.0.0.1:8080`).
 
 ## Policy firewall (OpenFlow 1.3)
 - Statiche: table-miss verso controller; drop globale TCP dst 2020; MQTT (1883/8883) consentito solo da `10.0.10.11` verso `10.0.10.20` (gli altri pacchetti MQTT vengono droppati dal controller senza installare flow di allow).
@@ -77,31 +77,49 @@ Dopo ~120 pkt in 5s viene loggato `DOS_DETECTED` e installato blocco 60s.
 Usa `mosquitto_pub` / `mosquitto_sub` o `nc` per un semplice handshake.
 
 ## API REST (integra con dashboard Node/Express)
-Base URL: `http://10.0.0.1:8080`
+Base URL da host (proxy locale): `http://127.0.0.1:18080`  
+Base URL interno al lab: `http://10.0.0.1:8080`
 
 - Stato e metriche
 ```
-curl http://10.0.0.1:8080/api/firewall/status
+curl http://127.0.0.1:18080/api/firewall/status
+# include anche blocked_ports, traffico, top talkers
 ```
 
 - Ultimi eventi (max 500, default 200)
 ```
-curl "http://10.0.0.1:8080/api/firewall/events?limit=50"
+curl "http://127.0.0.1:18080/api/firewall/events?limit=50"
 ```
 
 - Blocco manuale
 ```
-curl -X POST http://10.0.0.1:8080/api/firewall/block \
+curl -X POST http://127.0.0.1:18080/api/firewall/block \
   -H 'Content-Type: application/json' \
   -d '{"ip":"10.0.10.30","seconds":90}'
 ```
 
 - Sblocco manuale
 ```
-curl -X POST http://10.0.0.1:8080/api/firewall/unblock \
+curl -X POST http://127.0.0.1:18080/api/firewall/unblock \
   -H 'Content-Type: application/json' \
   -d '{"ip":"10.0.10.30"}'
 ```
+
+- Blocco porta TCP (scope mqtt=solo verso 10.0.10.20, scope global=LAN intera)
+```
+curl -X POST http://127.0.0.1:18080/api/firewall/block_port \
+  -H 'Content-Type: application/json' \
+  -d '{"port":1883,"scope":"mqtt","seconds":120,"override_allow":false}'
+```
+
+- Sblocco porta TCP
+```
+curl -X POST http://127.0.0.1:18080/api/firewall/unblock_port \
+  -H 'Content-Type: application/json' \
+  -d '{"port":1883,"scope":"mqtt"}'
+```
+
+Eventi aggiunti: `PORT_BLOCKED`, `PORT_UNBLOCKED` (reason `MANUAL_PORT_BLOCK`, `MANUAL_PORT_UNBLOCK` o `timeout`).
 
 ## File principali
 - `shared/sdn_firewall.py`: app Ryu + API REST, enforcement L3/L4, detection e flow install/remove.
@@ -110,7 +128,41 @@ curl -X POST http://10.0.0.1:8080/api/firewall/unblock \
 - `shared/of_helpers.py`: helper OpenFlow.
 - `s1/startup`, `ctrl/startup`, `h_* /startup`: configurazione nodi lab (subnet 10.0.10.0/24 per il traffico dati, MGMT 10.0.0.0/24).
 
+## Dashboard web (porta 3000)
+- URL: `http://localhost:3000` (login admin) e nuova pagina `http://localhost:3000/firewall` per il pannello SDN.
+- Variabile env backend per il proxy verso Ryu: `RYU_API_BASE` (default `http://127.0.0.1:18080`, fallback `http://10.0.0.1:8080`). Il backend espone `/api/ui/firewall/*` come proxy autenticato.
+- Pagina SDN Firewall: overview regole attive, MQTT hosts/sorgenti consentite, contatori eventi, traffico verso MQTT (pkts/bytes), top talkers, liste IP/porte bloccate, tabella eventi filtrabile, azioni manuali (block/unblock IP e porte con scope e override della allow rule).
+- UI auto-refresh ogni ~3-4s; gli stati bloccati sono evidenziati in rosso, quelli OK in verde. Usa l'header JWT già presente nel resto della dashboard.
+- Screenshot descrittivo: la pagina mostra due righe di card (overview, traffico, blocked IP/ports) e sotto tabella eventi + form di controllo manuale.
+
+## Accesso API + dashboard dal host (senza route verso 10.0.0.0/24)
+1) Avvia il lab:
+```
+cd ngn-sdn-firewall
+kathara lstart
+```
+2) Dal root del repo, avvia il piccolo proxy host (richiede docker e python3):
+```
+cd ..
+./tools/ryu_host_proxy.py
+```
+3) Testa dal host:
+```
+curl http://127.0.0.1:18080/api/firewall/status
+```
+4) Avvia la dashboard backend:
+```
+cd server
+node server.js
+```
+5) Apri la UI: `http://localhost:3000/firewall`
+
+Per fermare il proxy: Ctrl+C sul processo `ryu_host_proxy.py`.
+
 ## Troubleshooting
+- Verificare che il proxy sia attivo sul host: `ss -lntp | grep 18080` deve mostrare `127.0.0.1:18080` in ascolto (processo python).
+- Nome container `ctrl`: `docker ps | grep ctrl` (serve al proxy per ricavare l'IP reale del container).
+- Se `curl http://127.0.0.1:18080/api/firewall/status` fallisce, controlla l'IP del container e la porta nel container: `docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' $(docker ps --format '{{.Names}}' | grep '_ctrl_' | head -n1)` e poi `kathara connect ctrl` con `ss -lntp | grep 8080`.
 - Verificare che Ryu giri: in `kathara connect ctrl` dovresti vedere `ryu-manager ...` in foreground. In alternativa `ps -ef | grep ryu-manager`.
 - Verificare che `s1` sia connesso: `ovs-vsctl get-controller br0` e `ovs-vsctl show` su `s1` devono riportare `tcp:10.0.0.1:6633`.
 - Verificare OpenFlow13: `ovs-vsctl get bridge br0 protocols` deve restituire `["OpenFlow13"]`.

@@ -47,3 +47,29 @@ def delete_flows(datapath, match):
 
 def now() -> float:
     return time.time()
+
+
+def _match_for_port(parser, port: int, scope: str, mqtt_ip: str = None):
+    """Build a match object for a TCP dst port with optional MQTT scope."""
+    if scope == "mqtt" and mqtt_ip:
+        return parser.OFPMatch(eth_type=0x0800, ip_proto=6, ipv4_dst=mqtt_ip, tcp_dst=port)
+    return parser.OFPMatch(eth_type=0x0800, ip_proto=6, tcp_dst=port)
+
+
+def add_drop_flow_for_port(datapath,
+                           port: int,
+                           scope: str,
+                           mqtt_ip: str = None,
+                           hard_timeout: int = 0,
+                           priority: int = 480):
+    """Install a drop flow for the given TCP destination port."""
+    parser = datapath.ofproto_parser
+    match = _match_for_port(parser, port, scope, mqtt_ip)
+    add_flow(datapath, priority, match, [], hard_timeout=hard_timeout)
+
+
+def delete_drop_flow_for_port(datapath, port: int, scope: str, mqtt_ip: str = None):
+    """Remove drop flows for a TCP destination port."""
+    parser = datapath.ofproto_parser
+    match = _match_for_port(parser, port, scope, mqtt_ip)
+    delete_flows(datapath, match)

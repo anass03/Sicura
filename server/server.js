@@ -24,9 +24,15 @@ app.use(express.json());
 // API
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api", require("./routes/accessRoutes"));
+app.use("/api/ui/firewall", require("./routes/firewallRoutes"));
 
 // frontend statico
 app.use(express.static(path.join(__dirname, "public")));
+
+// pagina dedicata firewall
+app.get("/firewall", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "firewall.html"));
+});
 
 app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index.html"));

@@ -665,10 +665,15 @@
 	                <div class="subtitle">Access control</div>
 	            </div>
 	        </div>
-        <!-- Bottone logout -->
+        <!-- Azioni header -->
+        <div style="display:flex; gap:10px;">
+            <button id="firewallBtn" class="btn-ok" style="flex:0 0 auto; padding:6px 14px; max-width:160px; background:linear-gradient(135deg,#22c55e,#16a34a);">
+                SDN Firewall
+            </button>
 	        <button id="logoutBtn" class="btn-ko" style="flex:0 0 auto; padding:6px 16px; max-width:140px;">
 	            Log out
 	        </button>
+        </div>
     </header>
 
     <div class="grid">
@@ -911,6 +916,7 @@
     // --- Riferimenti UI dashboard ---
     const btnOk = document.getElementById("btnOk");
     const btnKo = document.getElementById("btnKo");
+    const firewallBtn = document.getElementById("firewallBtn");
     const stateBadge = document.getElementById("stateBadge");
     const stateText = document.getElementById("stateText");
     const statePill = document.getElementById("statePill");
@@ -1094,6 +1100,9 @@
 
     btnOk.addEventListener("click", () => sendDecision("OK"));
     btnKo.addEventListener("click", () => sendDecision("KO"));
+    firewallBtn?.addEventListener("click", () => {
+        window.location.href = "/firewall";
+    });
 
     function startStatusPolling() {
         if (statusTimer) clearInterval(statusTimer);

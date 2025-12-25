@@ -7,5 +7,6 @@ module.exports = {
     TELEGRAM_TOKEN: "8213309720:AAHnYD7f_AD3vd2cOd33FJbWjT9XzNaewuA",        // token BotFather
     PORT: 3000,
     JWT_SECRET: "cambia-questa-frase-segreta", // metti una stringa forte
-    DATA_FILE: path.join(__dirname, "data", "users.json")
+    DATA_FILE: path.join(__dirname, "data", "users.json"),
+    RYU_API_BASE: process.env.RYU_API_BASE || "http://127.0.0.1:18080",
 };
