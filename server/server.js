@@ -25,6 +25,7 @@ app.use(express.json());
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api", require("./routes/accessRoutes"));
 app.use("/api/ui/firewall", require("./routes/firewallRoutes"));
+app.use("/api/ui/lab", require("./routes/labRoutes"));
 
 // frontend statico
 app.use(express.static(path.join(__dirname, "public")));

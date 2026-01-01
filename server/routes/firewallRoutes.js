@@ -41,9 +41,6 @@ async function forwardJson(res, targetPath, options = {}) {
                     target: url,
                 });
             }
-            console.info(
-                `[firewall-proxy] ${options.method || "GET"} ${targetPath} via ${base}`,
-            );
             return res.status(controllerRes.status).json(payload);
         } catch (err) {
             errors.push({ base, message: err.message });

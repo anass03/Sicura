@@ -6,21 +6,23 @@ from of_helpers import now
 
 
 class FirewallLogic:
-    """Stateful logic and bookkeeping for the SDN firewall."""
-
-    def __init__(self,
-                 mqtt_hosts: List[str],
-                 allowed_mqtt_sources: List[str],
-                 mqtt_ports: Optional[List[int]] = None,
-                 portscan_threshold: int = 6,
-                 portscan_window: int = 10,
-                 dos_threshold: int = 120,
-                 dos_window: int = 5,
-                 block_seconds: int = 60,
-                 scan_block_seconds: int = 30):
+    def __init__(
+        self,
+        mqtt_hosts: List[str],
+        allowed_mqtt_sources: List[str],
+        mqtt_ports: Optional[List[int]] = None,
+        allowed_subnet: Optional[str] = None,
+        portscan_threshold: int = 6,
+        portscan_window: int = 10,
+        dos_threshold: int = 120,
+        dos_window: int = 5,
+        block_seconds: int = 60,
+        scan_block_seconds: int = 30,
+    ):
         self.mqtt_hosts = set(mqtt_hosts)
         self.allowed_mqtt_sources = set(allowed_mqtt_sources)
         self.mqtt_ports = set(mqtt_ports or [1883, 8883])
+        self.allowed_subnet = allowed_subnet
 
         self.portscan_threshold = portscan_threshold
         self.portscan_window = portscan_window
@@ -33,23 +35,23 @@ class FirewallLogic:
         self.lock = threading.Lock()
         self.events: Deque[Dict] = deque(maxlen=500)
         self.event_counters: Dict[str, int] = defaultdict(int)
+
         self.blocked_ips: Dict[str, Dict] = {}
         self.blocked_ports: Dict[Tuple[str, int, bool], Dict] = {}
 
-        # Statistics
+        self.mqtt_attempts: Dict[str, Dict[str, int]] = defaultdict(lambda: {"allowed": 0, "denied": 0})
+
+        # Stats from flows
         self.traffic_to_mqtt = {"packets": 0, "bytes": 0}
         self.top_talkers: List[Dict] = []
+        self.packet_talkers: Dict[str, Dict[str, int]] = defaultdict(lambda: {"packets": 0, "bytes": 0})
 
         # Detection caches
         self._scan_history: Dict[str, Deque] = defaultdict(deque)
         self._dos_history: Dict[str, Deque] = defaultdict(deque)
 
     def log_event(self, event_type: str, **details):
-        event = {
-            "type": event_type,
-            "timestamp": now(),
-            **details,
-        }
+        event = {"type": event_type, "timestamp": now(), **details}
         with self.lock:
             self.events.appendleft(event)
             self.event_counters[event_type] += 1
@@ -65,25 +67,22 @@ class FirewallLogic:
         with self.lock:
             self.traffic_to_mqtt["packets"] += 1
             self.traffic_to_mqtt["bytes"] += byte_len
-            # lightweight top talkers: we recompute from flow stats but keep a quick view here
+            self.packet_talkers[src_ip]["packets"] += 1
+            self.packet_talkers[src_ip]["bytes"] += byte_len
 
-    def should_allow_mqtt(self, src_ip: str, dst_ip: str) -> bool:
-        return src_ip in self.allowed_mqtt_sources and dst_ip in self.mqtt_hosts
+    def record_mqtt_attempt(self, src_ip: str, allowed: bool):
+        key = "allowed" if allowed else "denied"
+        with self.lock:
+            self.mqtt_attempts[src_ip][key] += 1
 
     def track_portscan(self, src_ip: str, dst_port: int) -> bool:
-        """Return True if a port-scan is detected for this src."""
         now_ts = now()
         history = self._scan_history[src_ip]
         history.append((now_ts, dst_port))
-
-        # purge old entries
         while history and now_ts - history[0][0] > self.portscan_window:
             history.popleft()
-
         unique_ports = {p for _, p in history}
-        if len(unique_ports) >= self.portscan_threshold:
-            return True
-        return False
+        return len(unique_ports) >= self.portscan_threshold
 
     def track_dos(self, src_ip: str) -> bool:
         now_ts = now()
@@ -91,9 +90,7 @@ class FirewallLogic:
         history.append(now_ts)
         while history and now_ts - history[0] > self.dos_window:
             history.popleft()
-        if len(history) >= self.dos_threshold:
-            return True
-        return False
+        return len(history) >= self.dos_threshold
 
     def block_ip(self, ip: str, seconds: Optional[int], reason: str, target: str = "MQTT"):
         expires_at = now() + (seconds if seconds else self.block_seconds)
@@ -122,31 +119,13 @@ class FirewallLogic:
                     self.blocked_ips.pop(ip, None)
         return expired
 
-    # --- Port blocking ---
-    def block_port(self,
-                   port: int,
-                   scope: str = "mqtt",
-                   seconds: Optional[int] = None,
-                   override_allow: bool = False,
-                   reason: str = "manual"):
+    def block_port(self, port: int, scope: str = "mqtt", seconds: Optional[int] = None, override_allow: bool = False, reason: str = "manual"):
         expires_at = now() + (seconds if seconds else self.block_seconds)
         key = (scope, int(port), bool(override_allow))
-        entry = {
-            "port": int(port),
-            "scope": scope,
-            "override_allow": bool(override_allow),
-            "expires_at": expires_at,
-        }
+        entry = {"port": int(port), "scope": scope, "override_allow": bool(override_allow), "expires_at": expires_at}
         with self.lock:
             self.blocked_ports[key] = entry
-        self.log_event(
-            "PORT_BLOCKED",
-            port=int(port),
-            scope=scope,
-            seconds=seconds or self.block_seconds,
-            override_allow=bool(override_allow),
-            reason=reason,
-        )
+        self.log_event("PORT_BLOCKED", port=int(port), scope=scope, seconds=seconds or self.block_seconds, override_allow=bool(override_allow), reason=reason)
         return expires_at
 
     def unblock_port(self, port: int, scope: str = "mqtt", override_allow: Optional[bool] = None, reason: str = "manual"):
@@ -157,13 +136,7 @@ class FirewallLogic:
                 if k_port == int(port) and k_scope == scope and (override_allow is None or k_override == bool(override_allow)):
                     removed.append(self.blocked_ports.pop(key))
         for entry in removed:
-            self.log_event(
-                "PORT_UNBLOCKED",
-                port=entry["port"],
-                scope=entry["scope"],
-                override_allow=entry["override_allow"],
-                reason=reason,
-            )
+            self.log_event("PORT_UNBLOCKED", port=entry["port"], scope=entry["scope"], override_allow=entry["override_allow"], reason=reason)
         return removed
 
     def cleanup_expired_port_blocks(self):
@@ -182,24 +155,31 @@ class FirewallLogic:
 
         for stat in flow_stats:
             fields = dict(stat.match.items())
-            dst_ip = fields.get('ipv4_dst')
+            dst_ip = fields.get("ipv4_dst")
             if dst_ip not in self.mqtt_hosts:
                 continue
             total_packets += stat.packet_count
             total_bytes += stat.byte_count
-            src_ip = fields.get('ipv4_src', 'unknown')
+            src_ip = fields.get("ipv4_src")
+            if not src_ip:
+                continue
             per_src[src_ip]["packets"] += stat.packet_count
             per_src[src_ip]["bytes"] += stat.byte_count
 
         with self.lock:
             self.traffic_to_mqtt = {"packets": total_packets, "bytes": total_bytes}
+            merged = defaultdict(lambda: {"packets": 0, "bytes": 0})
+            for ip, data in per_src.items():
+                merged[ip]["packets"] += data["packets"]
+                merged[ip]["bytes"] += data["bytes"]
+            for ip, data in self.packet_talkers.items():
+                merged[ip]["packets"] += data["packets"]
+                merged[ip]["bytes"] += data["bytes"]
+
             self.top_talkers = sorted(
-                [
-                    {"ip": ip, "packets": data["packets"], "bytes": data["bytes"]}
-                    for ip, data in per_src.items()
-                ],
-                key=lambda x: x["bytes"],
-                reverse=True
+                [{"ip": ip, "packets": d["packets"], "bytes": d["bytes"]} for ip, d in merged.items()],
+                key=lambda x: (x["bytes"], x["packets"]),
+                reverse=True,
             )
 
     def get_status(self):
@@ -207,10 +187,13 @@ class FirewallLogic:
             return {
                 "mqtt_hosts": list(self.mqtt_hosts),
                 "allowed_mqtt_sources": list(self.allowed_mqtt_sources),
+                "allowed_mqtt_subnet": self.allowed_subnet,
                 "mqtt_ports": list(self.mqtt_ports),
                 "event_counters": dict(self.event_counters),
                 "blocked_ips": self.blocked_ips.copy(),
                 "blocked_ports": list(self.blocked_ports.values()),
                 "traffic_to_mqtt": dict(self.traffic_to_mqtt),
                 "top_talkers": list(self.top_talkers),
+                "mqtt_attempts": {ip: dict(data) for ip, data in self.mqtt_attempts.items()},
             }
+

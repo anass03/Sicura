@@ -2,33 +2,37 @@
 
 echo "[S1] startup running" > /tmp/startup.log
 
-# Management IP per parlare col controller
-ip addr add 10.0.0.2/24 dev eth0
+# Mgmt IP (s1)
+ip addr add 10.0.0.2/24 dev eth0 || true
 ip link set eth0 up
-CTRL_IP="10.0.0.1"  # assegnato allo switch via rete MGMT
+CTRL_IP="10.0.0.1"  # controller on MGMT
 
-# Alzo le altre interfacce
-ip link set eth1 up
-ip link set eth2 up
-ip link set eth3 up
+# Bring up data ports
+for i in 1 2 3 4 5 6 7; do
+  ip link set "eth$i" up || true
+done
 
-# Avvio demoni Open vSwitch se non attivi (necessario per avere /var/run/openvswitch/db.sock)
+# Start OVS if needed
 mkdir -p /var/run/openvswitch /var/log/openvswitch
 if ! ovs-vsctl show >/dev/null 2>&1; then
   /usr/share/openvswitch/scripts/ovs-ctl start --system-id=random
 fi
 
-# Creo il bridge Open vSwitch
-ovs-vsctl add-br br0
-ovs-vsctl add-port br0 eth1
-ovs-vsctl add-port br0 eth2
-ovs-vsctl add-port br0 eth3
+# Bridge + ports (idempotent)
+ovs-vsctl --may-exist add-br br0
+for i in 1 2 3 4 5 6 7; do
+  ovs-vsctl --may-exist add-port br0 "eth$i"
+done
 
-# Indirizzo IP sul bridge per fungere da default gateway / ARP responder
-ip addr add 10.0.10.1/24 dev br0
+# L3 gateway on br0
+GATEWAY_MAC="02:aa:bb:cc:dd:01"
+ip link set br0 address ${GATEWAY_MAC}
+ip addr add 10.0.10.1/24 dev br0 || true
+ip addr add 10.0.20.1/24 dev br0 || true
 ip link set br0 up
-sysctl -w net.ipv4.ip_forward=1 > /dev/null || true
+sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
 
-# Imposto il controller Ryu (porta OpenFlow 6633)
+# OpenFlow controller
 ovs-vsctl set bridge br0 protocols=OpenFlow13
-ovs-vsctl set-controller br0 tcp:${CTRL_IP}:6633
+ovs-vsctl set-controller br0 "tcp:${CTRL_IP}:6633"
+

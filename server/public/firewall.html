@@ -51,7 +51,9 @@
         button:hover, .btn-link:hover { filter: brightness(1.04); }
         button:active, .btn-link:active { transform: translateY(1px); }
         .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text-main); box-shadow: none; border:1px solid var(--border-subtle); }
-        .grid { display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+        .grid { display:grid; gap:16px; }
+        .cards-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+        .controls-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); align-items: start; }
         .card {
             background: linear-gradient(145deg, var(--bg-card), var(--bg-card-strong));
             border:1px solid var(--border-subtle);
@@ -67,6 +69,7 @@
         .pill.green { border-color: rgba(34,197,94,0.6); color:#bbf7d0; }
         .stat-value { font-size:26px; font-weight:700; margin:2px 0; }
         .muted { color: var(--text-muted); font-size:13px; }
+        .muted-small { color: var(--text-muted); font-size:12px; }
         .list { margin: 8px 0 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; }
         .list-item { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border:1px solid var(--border-subtle); border-radius: var(--radius-sm); background: rgba(255,255,255,0.02); }
         table { width:100%; border-collapse: collapse; font-size:13px; }
@@ -91,7 +94,26 @@
         .msg.success { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.45); color:#bbf7d0; }
         .table-scroll { max-height: 320px; overflow-y: auto; margin-top:6px; }
         .label-small { font-size:12px; color: var(--text-muted); margin-top:2px; }
-        @media (max-width: 640px) { h1 { font-size:19px; } .nav-actions { flex-wrap: wrap; } }
+        @media (max-width: 900px) {
+            .cards-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+            .controls-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            h1 { font-size:19px; }
+            .page { padding: 18px 14px 32px; }
+            header { flex-direction: column; align-items:flex-start; gap:10px; }
+            .nav-actions { flex-wrap: wrap; width: 100%; }
+            .form-row { grid-template-columns: 1fr; }
+            .card { padding: 12px 14px 14px; }
+        }
+        button:disabled, .btn-link:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none !important;
+            filter: saturate(0.6);
+            box-shadow: none !important;
+        }
+
     </style>
 </head>
 <body>
@@ -114,23 +136,31 @@
     <div id="errorBox" class="msg error"></div>
     <div id="successBox" class="msg success"></div>
 
-    <div class="grid">
+    <div class="grid cards-grid">
         <div class="card">
             <div class="card-header">
                 <div>
-                    <div class="card-title">Overview</div>
-                    <div class="label-small">MQTT hosts, rules & blocks</div>
+            <div class="card-title">Overview</div>
+            <div class="label-small">MQTT hosts · rules · blocks</div>
                 </div>
-                <div id="statusPill" class="pill">Polling…</div>
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                    <div id="labStatus" class="pill red">Lab: STOPPED</div>
+                    <button id="labStartBtn" class="btn-ghost" style="padding:6px 10px;">Start Lab</button>
+                    <button id="labStopBtn" class="btn-ghost" style="padding:6px 10px;" disabled>Stop Lab</button>
+                    <div id="statusPill" class="pill">Polling…</div>
+                </div>
             </div>
             <div class="stat-value" id="rulesCount">-</div>
-            <div class="muted">active rules (est.)</div>
+            <div class="muted" id="rulesBreakdown">policy rules (no L2 learning) + temporary blocks</div>
             <div style="display:flex; gap:10px; flex-wrap: wrap; margin-top:8px;">
+                <span class="badge" id="baseRules">Policy: -</span>
+                <span class="badge" id="dynamicRules">Dynamic: -</span>
                 <span class="badge" id="blockedIpCount">IPs: 0</span>
                 <span class="badge" id="blockedPortCount">Ports: 0</span>
-                <span class="badge" id="mqttHosts">MQTT: -</span>
-                <span class="badge" id="allowedSources">Allowed: -</span>
+                <span class="badge" id="mqttHosts">MQTT hosts: -</span>
+                <span class="badge" id="allowedSources">Allowed src: -</span>
             </div>
+            <div class="muted-small" style="margin-top:8px;">Static: ARP proxy, TCP mirror to MQTT, deterministic set_field/output (no NORMAL).</div>
         </div>
         <div class="card">
             <div class="card-header">
@@ -139,13 +169,14 @@
             </div>
             <div class="stat-value" id="trafficPackets">0 pkts</div>
             <div class="muted" id="trafficBytes">0 bytes</div>
-            <div class="label-small" style="margin-top:6px;">Top talkers</div>
+            <div class="muted-small" style="margin-top:4px;">From switch flow stats; includes allowed/denied.</div>
+            <div class="label-small" style="margin-top:6px;">Top talkers (by bytes)</div>
             <ul class="list" id="topTalkers"></ul>
         </div>
         <div class="card">
             <div class="card-header">
                 <div class="card-title">Blocked IPs</div>
-                <span class="pill red">Manual/auto</span>
+                <span class="pill red">IPv4</span>
             </div>
             <ul class="list" id="blockedIpList"></ul>
         </div>
@@ -155,6 +186,14 @@
                 <span class="pill red">TCP</span>
             </div>
             <ul class="list" id="blockedPortList"></ul>
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">MQTT attempts</div>
+                <span class="pill">per source</span>
+            </div>
+            <ul class="list" id="mqttAttempts"></ul>
+            <div class="muted-small" style="margin-top:6px;">Allowed vs denied connection attempts since controller boot.</div>
         </div>
     </div>
 
@@ -174,6 +213,8 @@
                     <option value="MQTT_DENIED">MQTT_DENIED</option>
                     <option value="PORTSCAN_DETECTED">PORTSCAN_DETECTED</option>
                     <option value="DOS_DETECTED">DOS_DETECTED</option>
+                    <option value="SYN_FLOOD_DETECTED">SYN_FLOOD_DETECTED</option>
+                    <option value="SUSPICIOUS_PATTERN">SUSPICIOUS_PATTERN</option>
                 </select>
                 <input id="filterSrc" placeholder="Filter by src_ip / ip" />
             </div>
@@ -194,7 +235,7 @@
         </div>
     </div>
 
-    <div class="grid" style="margin-top:16px;">
+    <div class="grid controls-grid" style="margin-top:16px;">
         <div class="card">
             <div class="card-header">
                 <div class="card-title">Manual IP control</div>
@@ -286,14 +327,24 @@
     const blockedPortCount = document.getElementById("blockedPortCount");
     const mqttHosts = document.getElementById("mqttHosts");
     const allowedSources = document.getElementById("allowedSources");
+    const baseRules = document.getElementById("baseRules");
+    const dynamicRules = document.getElementById("dynamicRules");
+    const rulesBreakdown = document.getElementById("rulesBreakdown");
     const trafficPackets = document.getElementById("trafficPackets");
     const trafficBytes = document.getElementById("trafficBytes");
     const topTalkers = document.getElementById("topTalkers");
     const blockedIpList = document.getElementById("blockedIpList");
     const blockedPortList = document.getElementById("blockedPortList");
+    const mqttAttempts = document.getElementById("mqttAttempts");
     const eventsBody = document.getElementById("eventsBody");
     const filterType = document.getElementById("filterType");
     const filterSrc = document.getElementById("filterSrc");
+    const labStatus = document.getElementById("labStatus");
+    const labStartBtn = document.getElementById("labStartBtn");
+    const labStopBtn = document.getElementById("labStopBtn");
+    const lockables = Array.from(document.querySelectorAll("form input, form select, form button:not(#labStartBtn):not(#labStopBtn)"));
+    let labUiState = "STOPPED";
+
 
     const authToken = localStorage.getItem("authToken");
     if (!authToken) {
@@ -311,14 +362,20 @@
     async function apiFetch(url, options = {}) {
         options.headers = options.headers || {};
         options.headers["Authorization"] = "Bearer " + authToken;
+
         const res = await fetch(url, options);
-        if (res.status === 401 || res.status === 403) {
+
+        // Solo 401 = token non valido
+        if (res.status === 401) {
             localStorage.removeItem("authToken");
             window.location.href = "/";
             throw new Error("Unauthorized");
         }
+
+        // 403 non è "logout": lascia che sia il caller a mostrarlo
         return res;
     }
+
 
     function formatTs(ts) {
         const d = new Date(ts * 1000 || ts);
@@ -328,23 +385,38 @@
     function renderStatus(data) {
         statusPill.textContent = "OK";
         statusPill.classList.remove("red");
-        rulesCount.textContent = data.active_rules ?? "-";
+        const mqttHostsCount = (data.mqtt_hosts || []).length;
+        const mqttPortsCount = (data.mqtt_ports || []).length;
+        const baseRuleCount = data.policy_rules ?? (1 + mqttHostsCount + (mqttHostsCount * mqttPortsCount));
+        const dynamicRuleCount = Object.keys(data.blocked_ips || {}).length + (data.blocked_ports?.length || 0);
+        rulesCount.textContent = (data.active_rules ?? (baseRuleCount + dynamicRuleCount));
+        baseRules.textContent = `Policy: ${baseRuleCount}`;
+        dynamicRules.textContent = `Dynamic: ${dynamicRuleCount}`;
+        rulesBreakdown.textContent = "Deterministic policy rules + temporary blocks (no L2 learning)";
         blockedIpCount.textContent = "IPs: " + Object.keys(data.blocked_ips || {}).length;
         blockedPortCount.textContent = "Ports: " + (data.blocked_ports?.length || 0);
-        mqttHosts.textContent = "MQTT: " + (data.mqtt_hosts || []).join(", ") || "-";
-        allowedSources.textContent = "Allowed: " + (data.allowed_mqtt_sources || []).join(", ") || "-";
+        mqttHosts.textContent = "MQTT hosts: " + ((data.mqtt_hosts || []).join(", ") || "-");
+        allowedSources.textContent = "Allowed src: " + ((data.allowed_mqtt_sources || []).join(", ") || "-");
         trafficPackets.textContent = `${data.traffic_to_mqtt?.packets || 0} pkts`;
         trafficBytes.textContent = `${data.traffic_to_mqtt?.bytes || 0} bytes`;
 
         topTalkers.innerHTML = "";
-        (data.top_talkers || []).slice(0, 5).forEach((t) => {
+        const filteredTopTalkers = (data.top_talkers || [])
+            .filter((t) => (t.bytes || 0) > 0 || (t.packets || 0) > 0)
+            .sort((a, b) => {
+                if ((b.bytes || 0) !== (a.bytes || 0)) return (b.bytes || 0) - (a.bytes || 0);
+                return (b.packets || 0) - (a.packets || 0);
+            })
+            .slice(0, 5);
+        filteredTopTalkers.forEach((t) => {
             const li = document.createElement("li");
             li.className = "list-item";
-            li.innerHTML = `<div><div>${t.ip}</div><div class="label-small">${t.packets} pkts</div></div><div>${t.bytes} B</div>`;
+            const labelIp = t.ip === "unknown" ? "unknown (no src in flow match)" : t.ip;
+            li.innerHTML = `<div><div>${labelIp}</div><div class="label-small">${t.packets} pkts</div></div><div>${t.bytes} B</div>`;
             topTalkers.appendChild(li);
         });
         if (!topTalkers.childElementCount) {
-            topTalkers.innerHTML = `<li class="list-item"><span class="muted">No traffic yet.</span></li>`;
+            topTalkers.innerHTML = `<li class="list-item"><div><div class="muted">No MQTT traffic yet.</div><div class="label-small">Generate traffic with mosquitto_pub/sub to see top talkers.</div></div></li>`;
         }
 
         blockedIpList.innerHTML = "";
@@ -371,6 +443,22 @@
         });
         if (!blockedPortList.childElementCount) {
             blockedPortList.innerHTML = `<li class="list-item"><span class="muted">No blocked ports.</span></li>`;
+        }
+
+        mqttAttempts.innerHTML = "";
+        const attempts = Object.entries(data.mqtt_attempts || {});
+        attempts.forEach(([ip, stats]) => {
+            const li = document.createElement("li");
+            li.className = "list-item";
+            const allowed = stats.allowed || 0;
+            const denied = stats.denied || 0;
+            const total = allowed + denied;
+            const ratio = total ? `${allowed}/${total}` : "0/0";
+            li.innerHTML = `<div><div>${ip}</div><div class="label-small">allowed ${allowed} · denied ${denied}</div></div><div class="badge">${ratio}</div>`;
+            mqttAttempts.appendChild(li);
+        });
+        if (!mqttAttempts.childElementCount) {
+            mqttAttempts.innerHTML = `<li class="list-item"><span class="muted">No attempts yet.</span></li>`;
         }
     }
 
@@ -400,22 +488,35 @@
     }
 
     async function fetchStatus() {
+        if (labUiState !== "RUNNING") return;
         try {
             const res = await apiFetch("/api/ui/firewall/status");
-            if (!res.ok) throw new Error("Status HTTP " + res.status);
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || data.details || ("Status HTTP " + res.status));
+            }
             const data = await res.json();
             renderStatus(data);
         } catch (err) {
             statusPill.textContent = "ERROR";
             statusPill.classList.add("red");
             showMsg(errorBox, "Status error: " + err.message);
+            setTimeout(() => {
+                if ((errorBox.textContent || "").startsWith("Status error")) {
+                    showMsg(errorBox, "");
+                }
+            }, 2000);
         }
     }
 
     async function fetchEvents() {
+        if (labUiState !== "RUNNING") return;
         try {
             const res = await apiFetch("/api/ui/firewall/events?limit=200");
-            if (!res.ok) throw new Error("Events HTTP " + res.status);
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || data.details || ("Events HTTP " + res.status));
+            }
             const data = await res.json();
             cachedEvents = data.events || [];
             renderEvents();
@@ -423,6 +524,7 @@
             showMsg(errorBox, "Events error: " + err.message);
         }
     }
+
 
     async function postJson(url, payload) {
         const res = await apiFetch(url, {
@@ -504,15 +606,86 @@
         window.location.href = "/";
     });
     document.getElementById("refreshBtn").addEventListener("click", () => {
-        fetchStatus(); fetchEvents();
+        fetchStatus(); fetchEvents(); fetchLab();
     });
     filterType.addEventListener("change", renderEvents);
     filterSrc.addEventListener("input", renderEvents);
 
+    async function postLab(url) {
+        const res = await apiFetch(url, { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || data.details || ("HTTP " + res.status));
+        return data;
+    }
+
+
+    function setUiState(state) {
+        labUiState = state;
+        const running = state === "RUNNING";
+        labStatus.textContent = `Lab: ${state}`;
+        labStatus.className = "pill " + (running ? "green" : "");
+        lockables.forEach(el => { el.disabled = !running; });
+        if (state === "STARTING") {
+            labStartBtn.disabled = true;
+            labStopBtn.disabled = true;
+            labStartBtn.textContent = "Avviando…";
+            showMsg(errorBox, "");
+            showMsg(successBox, "Lab in avvio…");
+            setTimeout(() => showMsg(successBox, ""), 1500);
+        } else if (state === "STOPPING") {
+            labStartBtn.disabled = true;
+            labStopBtn.disabled = true;
+            labStopBtn.textContent = "Arrestando…";
+            showMsg(errorBox, "");
+            showMsg(successBox, "Lab in arresto…");
+            setTimeout(() => showMsg(successBox, ""), 1500);
+        } else if (state === "RUNNING") {
+            labStartBtn.disabled = true;
+            labStopBtn.disabled = false;
+            labStartBtn.textContent = "Start Lab";
+            labStopBtn.textContent = "Stop Lab";
+            showMsg(successBox, "");
+            showMsg(errorBox, "");
+        } else { // STOPPED or ERROR
+            labStartBtn.disabled = false;
+            labStopBtn.disabled = true;
+            labStartBtn.textContent = "Start Lab";
+            labStopBtn.textContent = "Stop Lab";
+        }
+    }
+
+    labStartBtn.addEventListener("click", async () => {
+        setUiState("STARTING");
+        try {
+            await postLab("/api/ui/lab/start");
+            setTimeout(() => setUiState("RUNNING"), 3000);
+        } catch (err) {
+            showMsg(successBox, "");
+            showMsg(errorBox, "Start Lab failed: " + err.message);
+            setUiState("STOPPED");
+        }
+    });
+
+    labStopBtn.addEventListener("click", async () => {
+        const prevState = labUiState;
+        setUiState("STOPPING");
+        try {
+            await postLab("/api/ui/lab/stop");
+            setTimeout(() => setUiState("STOPPED"), 3000);
+        } catch (err) {
+            showMsg(successBox, "");
+            showMsg(errorBox, "Stop Lab failed: " + err.message);
+            setUiState(prevState === "RUNNING" ? "RUNNING" : "STOPPED");
+        }
+    });
+
+
     fetchStatus();
     fetchEvents();
-    const statusTimer = setInterval(fetchStatus, 3000);
-    const eventsTimer = setInterval(fetchEvents, 4000);
+    setInterval(fetchStatus, 3000);
+    setInterval(fetchEvents, 4000);
+    setUiState("STOPPED");
+
 </script>
 </body>
 </html>
