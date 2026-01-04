@@ -10,6 +10,8 @@ if (!TELEGRAM_TOKEN) {
     module.exports = {
         notifyAccessRequest: () => {},
         notifyUserRegistered: () => {},
+        notifyOtpForUser: () => {},
+        notifyOtpChanged: () => {},
     };
     return;
 }
@@ -202,8 +204,43 @@ function notifyUserRegistered(user) {
     bot.sendMessage(user.telegramChatId, text);
 }
 
+async function notifyOtpForUser(user, otpInfo, reason = "registration") {
+    if (!user?.telegramChatId || !otpInfo?.otp) return;
+    const when = otpInfo.updatedAt ? `\nUpdated at: ${otpInfo.updatedAt}` : "";
+    const prefix = reason === "registration"
+        ? "Here is your access OTP."
+        : "Access OTP update.";
+    const text = `${prefix}\n\nOTP: *${otpInfo.otp}*${when}\nPlease keep it safe.`;
+    try {
+        await bot.sendMessage(user.telegramChatId, text, { parse_mode: "Markdown" });
+    } catch (err) {
+        console.error("Error sending OTP to user", user.telegramUsername, err);
+    }
+}
+
+async function notifyOtpChanged(otpInfo) {
+    if (!otpInfo?.otp) return;
+
+    const recipients = [...userStore.getAdmins(), ...userStore.getUsers()]
+        .filter((u) => u?.telegramChatId);
+    const seen = new Set();
+    const text = `🔐 The shared OTP has been updated.\n\nNew OTP: *${otpInfo.otp}*\nUpdated at: ${otpInfo.updatedAt || "now"}`;
+
+    for (const rec of recipients) {
+        if (seen.has(rec.telegramChatId)) continue;
+        seen.add(rec.telegramChatId);
+        try {
+            await bot.sendMessage(rec.telegramChatId, text, { parse_mode: "Markdown" });
+        } catch (err) {
+            console.error("Error notifying OTP change to", rec.telegramUsername, err);
+        }
+    }
+}
+
 
 module.exports = {
     notifyAccessRequest,
     notifyUserRegistered,
+    notifyOtpForUser,
+    notifyOtpChanged,
 };

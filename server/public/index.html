@@ -690,9 +690,16 @@
 	                    <span id="statePillText">No active request</span>
                 </div>
 
-                <div id="otpBox" style="margin-top:12px; display:none;">
-                    <p class="request-label">Last OTP generated</p>
-                    <p id="otpValue" class="request-value"></p>
+                <div id="otpBox" style="margin-top:12px;">
+                    <div style="display:flex; align-items:flex-start; gap:10px; justify-content:space-between;">
+                        <div>
+                            <p class="request-label">Shared OTP</p>
+                            <p id="otpValue" class="request-value" style="margin:2px 0;"></p>
+                            <p id="otpUpdated" class="small-text" style="margin:0; color:var(--text-muted);"></p>
+                        </div>
+                        <button id="otpRegenerateBtn" class="btn-ok" style="flex:0 0 auto; padding:6px 12px;">Generate new</button>
+                    </div>
+                    <div id="otpMsg" class="msg-info" style="display:none; margin-top:8px;"></div>
                 </div>
             </div>
 
@@ -925,6 +932,9 @@
     const logBody = document.getElementById("logBody");
     const otpBox = document.getElementById("otpBox");
     const otpValue = document.getElementById("otpValue");
+    const otpUpdated = document.getElementById("otpUpdated");
+    const otpRegenerateBtn = document.getElementById("otpRegenerateBtn");
+    const otpMsg = document.getElementById("otpMsg");
     const usersBody = document.getElementById("usersBody");
 
     function setButtonsEnabled(enabled) {
@@ -954,12 +964,11 @@
 	        else if (systemState === "ACCESS_DENIED") dot.classList.add("red");
 	        else dot.classList.add("blue");
 
-        if (lastOtp) {
-            otpBox.style.display = "block";
-            otpValue.textContent = `${lastOtp} (${lastOtpTime})`;
-        } else {
-            otpBox.style.display = "none";
-        }
+        const hasOtp = !!lastOtp;
+        otpValue.textContent = hasOtp ? lastOtp : "No OTP generated yet.";
+        otpUpdated.textContent = lastOtpTime
+            ? `Updated at ${lastOtpTime}`
+            : "Waiting for the first OTP.";
 
 		        if (!currentRequest) {
 		            stateText.textContent = "Waiting for requests…";
@@ -971,12 +980,13 @@
 	          When the device sends a request, it will appear here.
 	        </p>`;
 		        } else {
-		            const isRegistered = !!currentRequest.registered;
-		            const isDisabled = currentRequest.enabled === false;
-		            const statusSuffix = isDisabled
-		                ? " (disabled)"
-		                : (!isRegistered ? " (unregistered)" : "");
-		            const displayUser = `${currentRequest.user || "Unknown"}${statusSuffix}`;
+            const isRegistered = !!currentRequest.registered;
+            const isDisabled = currentRequest.enabled === false;
+            const statusSuffix = isDisabled
+                ? " (disabled)"
+                : (!isRegistered ? " (unregistered)" : "");
+            const displayName = currentRequest.user || currentRequest.telegramUsername || "Unknown";
+            const displayUser = `${displayName}${statusSuffix}`;
 
 		            if (isRegistered && !isDisabled) {
 		                stateText.textContent =
@@ -1103,11 +1113,35 @@
     firewallBtn?.addEventListener("click", () => {
         window.location.href = "/firewall";
     });
+    otpRegenerateBtn?.addEventListener("click", regenerateOtp);
 
     function startStatusPolling() {
         if (statusTimer) clearInterval(statusTimer);
         fetchStatus();
         statusTimer = setInterval(fetchStatus, 2000);
+    }
+
+    async function regenerateOtp() {
+        if (!otpRegenerateBtn) return;
+        const originalText = otpRegenerateBtn.textContent;
+        otpRegenerateBtn.disabled = true;
+        otpRegenerateBtn.innerHTML = `<span class="spinner"></span> Generating…`;
+        try {
+            const res = await apiFetch("/api/otp/regenerate", { method: "POST" });
+            const data = await res.json();
+            if (!res.ok || !data.ok) {
+                showMessage(otpMsg, data.error || "Unable to regenerate the OTP.", "error", 6000);
+                return;
+            }
+            showMessage(otpMsg, "A new OTP was generated and shared with all users.", "success", 5000);
+            await fetchStatus();
+        } catch (err) {
+            console.error("Error while regenerating OTP:", err);
+            showMessage(otpMsg, "Network error while regenerating the OTP.", "error", 6000);
+        } finally {
+            otpRegenerateBtn.disabled = false;
+            otpRegenerateBtn.textContent = originalText;
+        }
     }
 
 	    // ---------- User management ----------

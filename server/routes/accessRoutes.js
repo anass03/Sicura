@@ -35,6 +35,16 @@ router.post("/decision", requireAdmin, (req, res) => {
     res.json({ ok: true });
 });
 
+// Rigenera OTP condiviso (solo admin)
+router.post("/otp/regenerate", requireAdmin, (req, res) => {
+    try {
+        const info = accessService.regenerateOtp?.("manual");
+        res.json({ ok: true, otp: info?.otp || null, updatedAt: info?.updatedAt || null });
+    } catch (e) {
+        res.status(500).json({ error: e.message || "Unable to regenerate OTP" });
+    }
+});
+
 // ====== GESTIONE UTENTI (solo admin) ======
 
 // lista utenti

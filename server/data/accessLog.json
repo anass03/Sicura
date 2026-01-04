@@ -1,358 +1,390 @@
 [
   {
-    "user": "UNKNOWNUSER",
-    "decision": "RICHIESTA_NON_REGISTRATO",
-    "time": "2025-12-15T10:04:38.512Z",
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:04:56.259Z",
     "source": "arduino"
   },
   {
-    "user": "UNKNOWNUSER",
+    "decision": "KO",
+    "otp": 775311,
+    "time": "2026-01-04T09:05:34.122Z",
+    "source": "web"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:09:32.272Z",
+    "source": "arduino"
+  },
+  {
     "decision": "OK",
-    "otp": 381648,
-    "time": "2025-12-15T10:05:18.139Z",
-    "source": "telegram"
-  },
-  {
-    "user": "UNKNOWNUSER",
-    "decision": "RICHIESTA_NON_REGISTRATO",
-    "time": "2025-12-15T10:44:05.432Z",
-    "source": "arduino"
-  },
-  {
-    "user": "UNKNOWNUSER",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-15T10:44:23.301Z",
+    "otp": 775311,
+    "time": "2026-01-04T09:09:57.985Z",
     "source": "web"
   },
   {
-    "user": "andreaaa0612",
-    "decision": "RICHIESTA_IN_ATTESA",
-    "time": "2025-12-15T11:35:35.302Z",
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:11:33.180Z",
     "source": "arduino"
   },
   {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-15T11:35:51.016Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "RICHIESTA_IN_ATTESA",
-    "time": "2025-12-15T11:36:36.756Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
     "decision": "OK",
-    "otp": 883009,
-    "time": "2025-12-15T11:36:40.437Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "RICHIESTA_IN_ATTESA",
-    "time": "2025-12-17T09:12:05.890Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T09:12:32.819Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "RICHIESTA_NON_REGISTRATO",
-    "time": "2025-12-17T09:37:20.693Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T09:37:43.600Z",
+    "otp": 775311,
+    "time": "2026-01-04T09:13:51.895Z",
     "source": "web"
   },
   {
-    "user": "UNKNOWNUSER",
-    "decision": "RICHIESTA_NON_REGISTRATO",
-    "time": "2025-12-17T10:05:39.181Z",
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:14:18.339Z",
     "source": "arduino"
   },
   {
-    "user": "UNKNOWNUSER",
     "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T10:05:50.988Z",
+    "otp": 775311,
+    "time": "2026-01-04T09:14:21.912Z",
     "source": "web"
   },
   {
-    "user": "UNKNOWNUSER",
-    "decision": "RICHIESTA_NON_REGISTRATO",
-    "time": "2025-12-17T10:09:15.354Z",
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:15:23.204Z",
     "source": "arduino"
   },
   {
-    "user": "UNKNOWNUSER",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T10:09:24.784Z",
-    "source": "web"
-  },
-  {
-    "user": "UNKNOWNUSER",
-    "decision": "RICHIESTA_NON_REGISTRATO",
-    "time": "2025-12-17T10:10:22.017Z",
-    "source": "arduino"
-  },
-  {
-    "user": "UNKNOWNUSER",
     "decision": "OK",
-    "otp": 666342,
-    "time": "2025-12-17T10:10:25.602Z",
+    "otp": 775311,
+    "time": "2026-01-04T09:15:49.782Z",
     "source": "web"
   },
   {
-    "user": "andreaaa0612",
-    "decision": "RICHIESTA_UTENTE_DISABILITATO",
-    "time": "2025-12-17T10:11:23.771Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T10:11:42.094Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "RICHIESTA_IN_ATTESA",
-    "time": "2025-12-17T10:12:05.238Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T10:12:21.628Z",
-    "source": "telegram"
-  },
-  {
-    "user": "omarbhuiyan3",
-    "decision": "RICHIESTA_IN_ATTESA",
-    "time": "2025-12-17T10:17:57.175Z",
-    "source": "arduino"
-  },
-  {
-    "user": "omarbhuiyan3",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T10:18:08.530Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "RICHIESTA_IN_ATTESA",
-    "time": "2025-12-17T10:19:24.129Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T10:19:40.560Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "RICHIESTA_IN_ATTESA",
-    "time": "2025-12-17T10:20:17.172Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T10:20:40.723Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "RICHIESTA_IN_ATTESA",
-    "time": "2025-12-17T10:24:53.142Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T10:25:01.437Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "DISABILITATO",
-    "time": "2025-12-17T11:17:26.667Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "IN_ATTESA",
-    "time": "2025-12-17T11:18:00.815Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-17T11:18:05.584Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
+    "user": "unknownuser",
     "decision": "WAITING",
-    "time": "2025-12-18T13:16:43.591Z",
+    "time": "2026-01-04T09:19:56.716Z",
     "source": "arduino"
   },
   {
-    "user": "andreaaa0612",
     "decision": "KO",
-    "otp": null,
-    "time": "2025-12-18T13:17:05.711Z",
-    "source": "telegram"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "WAITING",
-    "time": "2025-12-18T13:17:21.854Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-18T13:17:27.929Z",
+    "otp": 775311,
+    "time": "2026-01-04T09:20:05.212Z",
     "source": "web"
   },
   {
-    "user": "andreaaa0612",
+    "user": "unknownuser",
     "decision": "WAITING",
-    "time": "2025-12-18T13:22:16.518Z",
+    "time": "2026-01-04T09:20:34.401Z",
     "source": "arduino"
   },
   {
-    "user": "andreaaa0612",
     "decision": "KO",
-    "otp": null,
-    "time": "2025-12-18T13:22:19.985Z",
-    "source": "telegram"
+    "otp": 775311,
+    "time": "2026-01-04T09:20:39.621Z",
+    "source": "web"
   },
   {
-    "user": "andreaaa0612",
+    "user": "unknownuser",
     "decision": "WAITING",
-    "time": "2025-12-18T13:23:22.563Z",
+    "time": "2026-01-04T09:24:08.458Z",
     "source": "arduino"
   },
   {
-    "user": "andreaaa0612",
+    "user": "unknownuser",
     "decision": "WAITING",
-    "time": "2025-12-18T13:23:33.627Z",
+    "time": "2026-01-04T09:25:32.066Z",
     "source": "arduino"
   },
   {
-    "user": "andreaaa0612",
-    "decision": "WAITING",
-    "time": "2025-12-18T13:23:41.412Z",
-    "source": "arduino"
-  },
-  {
-    "user": "andreaaa0612",
     "decision": "KO",
-    "otp": null,
-    "time": "2025-12-18T13:23:57.289Z",
-    "source": "telegram"
+    "otp": 775311,
+    "time": "2026-01-04T09:27:43.820Z",
+    "source": "web"
   },
   {
-    "user": "andreaaa0612",
+    "user": "unknownuser",
     "decision": "WAITING",
-    "time": "2025-12-18T13:24:27.273Z",
+    "time": "2026-01-04T09:28:11.037Z",
     "source": "arduino"
   },
   {
-    "user": "andreaaa0612",
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:29:31.181Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "KO",
+    "otp": 775311,
+    "time": "2026-01-04T09:29:37.482Z",
+    "source": "web"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:30:22.640Z",
+    "source": "arduino"
+  },
+  {
     "decision": "OK",
-    "otp": 199026,
-    "time": "2025-12-18T13:24:31.473Z",
-    "source": "web"
-  },
-  {
-    "user": "UNKNOWNUSER",
-    "decision": "WAITING",
-    "time": "2025-12-18T13:26:32.476Z",
-    "source": "arduino"
-  },
-  {
-    "user": "UNKNOWNUSER",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-18T13:26:53.474Z",
+    "otp": 775311,
+    "time": "2026-01-04T09:30:39.817Z",
     "source": "web"
   },
   {
     "user": "andreaaa0612",
     "decision": "WAITING",
-    "time": "2025-12-18T13:27:36.416Z",
+    "time": "2026-01-04T09:31:45.885Z",
     "source": "arduino"
   },
   {
-    "user": "andreaaa0612",
-    "decision": "KO",
-    "otp": null,
-    "time": "2025-12-18T13:27:41.619Z",
-    "source": "web"
-  },
-  {
-    "user": "stelucio",
-    "decision": "WAITING",
-    "time": "2025-12-18T13:36:39.448Z",
-    "source": "arduino"
-  },
-  {
-    "user": "stelucio",
     "decision": "OK",
-    "otp": 633927,
-    "time": "2025-12-18T13:36:55.173Z",
+    "otp": 775311,
+    "time": "2026-01-04T09:31:50.067Z",
     "source": "telegram"
   },
   {
-    "user": "UNKNOWNUSER",
+    "user": "andreaaa0612",
     "decision": "WAITING",
-    "time": "2025-12-18T13:38:12.703Z",
+    "time": "2026-01-04T09:37:34.912Z",
     "source": "arduino"
   },
   {
-    "user": "UNKNOWNUSER",
     "decision": "KO",
-    "otp": null,
-    "time": "2025-12-18T13:38:20.780Z",
+    "otp": 134495,
+    "time": "2026-01-04T09:37:43.197Z",
+    "source": "telegram"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:37:50.243Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "OK",
+    "otp": 134495,
+    "time": "2026-01-04T09:37:54.188Z",
+    "source": "telegram"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:39:50.420Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "OK",
+    "otp": 134495,
+    "time": "2026-01-04T09:39:53.174Z",
+    "source": "telegram"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:40:41.341Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "KO",
+    "otp": 134495,
+    "time": "2026-01-04T09:40:45.280Z",
     "source": "web"
   },
   {
-    "user": "UNKNOWNUSER",
+    "user": "andreaaa0612",
     "decision": "WAITING",
-    "time": "2025-12-18T13:52:20.282Z",
+    "time": "2026-01-04T09:41:19.335Z",
     "source": "arduino"
   },
   {
-    "user": "UNKNOWNUSER",
     "decision": "KO",
-    "otp": null,
-    "time": "2025-12-18T13:52:33.460Z",
+    "otp": 134495,
+    "time": "2026-01-04T09:41:47.017Z",
     "source": "telegram"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:41:56.083Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "OK",
+    "otp": 134495,
+    "time": "2026-01-04T09:42:06.516Z",
+    "source": "telegram"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:42:40.931Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "OK",
+    "otp": 123192,
+    "time": "2026-01-04T09:42:56.926Z",
+    "source": "telegram"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:43:32.191Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "OK",
+    "otp": 123192,
+    "time": "2026-01-04T09:43:34.661Z",
+    "source": "telegram"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:44:06.654Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "OK",
+    "otp": 445393,
+    "time": "2026-01-04T09:44:10.057Z",
+    "source": "telegram"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:47:27.568Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "KO",
+    "otp": 445393,
+    "time": "2026-01-04T09:47:37.003Z",
+    "source": "telegram"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:47:43.033Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "KO",
+    "otp": 445393,
+    "time": "2026-01-04T09:47:44.883Z",
+    "source": "telegram"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:48:06.988Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "KO",
+    "otp": 445393,
+    "time": "2026-01-04T09:48:18.294Z",
+    "source": "web"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:49:49.897Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "KO",
+    "otp": 445393,
+    "time": "2026-01-04T09:49:56.332Z",
+    "source": "telegram"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:50:19.797Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "KO",
+    "otp": 445393,
+    "time": "2026-01-04T09:50:55.518Z",
+    "source": "web"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:52:59.044Z",
+    "source": "arduino"
+  },
+  {
+    "decision": "KO",
+    "otp": 445393,
+    "time": "2026-01-04T09:53:15.107Z",
+    "source": "web"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T09:56:13.891Z",
+    "source": "arduino"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T10:02:06.651Z",
+    "source": "arduino"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "KO",
+    "otp": 610827,
+    "time": "2026-01-04T10:02:18.539Z",
+    "source": "telegram"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T10:02:45.778Z",
+    "source": "arduino"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "WAITING",
+    "time": "2026-01-04T10:03:25.073Z",
+    "source": "arduino"
+  },
+  {
+    "user": "andreaaa0612",
+    "decision": "KO",
+    "otp": 610827,
+    "time": "2026-01-04T10:03:37.757Z",
+    "source": "telegram"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T10:04:13.037Z",
+    "source": "arduino"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "KO",
+    "otp": 610827,
+    "time": "2026-01-04T10:05:38.391Z",
+    "source": "web"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "WAITING",
+    "time": "2026-01-04T10:07:27.903Z",
+    "source": "arduino"
+  },
+  {
+    "user": "unknownuser",
+    "decision": "OK",
+    "otp": 610827,
+    "time": "2026-01-04T10:07:51.579Z",
+    "source": "web"
   }
 ]

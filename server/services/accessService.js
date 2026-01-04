@@ -2,16 +2,16 @@
 const fs = require("fs");
 const path = require("path");
 const userStore = require("./userStore");
+const otpStore = require("./otpStore");
 
 let mqttServiceRef = null;
 let telegramServiceRef = null;
 
-let currentRequest = null;   // { user, telegramUsername, timestamp, registered }
+// currentRequest structure: { user, telegramUsername, timestamp, registered, enabled, userStatus }
+let currentRequest = null;
 let systemState = "WAITING";
 
 let log = [];                // { user, decision, time, source, otp? }
-let lastOtp = null;
-let lastOtpTime = null;
 let pendingUsers = [];
 // ogni elemento: { id, username, telegramUsername, faceOk, telegramChatId }
 
@@ -25,10 +25,6 @@ const LOG_RETENTION_MS = 7 * 24 * 60 * 60 * 1000; // 7 giorni
 // DELETE pending: key = telegramUsername
 const pendingDeletes = new Map();
 const pendingDeleteTimeouts = new Map();
-
-function generateOtp() {
-    return Math.floor(100000 + Math.random() * 900000);
-}
 
 /* ---------- PERSISTENZA LOG ---------- */
 
@@ -86,17 +82,52 @@ function init(mqttService, telegramService) {
     }
 }
 
+function ensureOtpAvailable() {
+    if (otpStore.hasOtp()) {
+        return otpStore.getOtp();
+    }
+    console.warn("[accessService] OTP not found. Generating a new one to keep the system consistent.");
+    return regenerateOtp("auto");
+}
+
+function regenerateOtp(reason = "manual") {
+    const info = otpStore.generateAndSave();
+    if (telegramServiceRef?.notifyOtpChanged) {
+        telegramServiceRef.notifyOtpChanged(info, reason);
+    }
+    return info;
+}
+
+function ensureInitialOtp() {
+    if (otpStore.hasOtp()) return otpStore.getOtp();
+    return regenerateOtp("initial");
+}
+
+function getOtpInfo() {
+    return ensureOtpAvailable();
+}
+
+function sendOtpToUser(user, reason = "registration") {
+    if (!user || !user.telegramChatId) return;
+    const info = ensureOtpAvailable();
+    if (telegramServiceRef?.notifyOtpForUser) {
+        telegramServiceRef.notifyOtpForUser(user, info, reason);
+    }
+}
+
 /* ---------- RICHIESTA DA ARDUINO ---------- */
 
 function handleAccessRequest(payload) {
     const nowIso = new Date().toISOString();
 
     // user univoco tramite username Telegram (normalizzato)
-    const userRec = userStore.findUserByTelegramUsername(payload.telegramUsername);
+    const normalizedTelegram = userStore.normalizeTelegramUsername(payload.telegramUsername || "");
+    const userRec = userStore.findUserByTelegramUsername(normalizedTelegram);
 
     const exists    = !!userRec;
     const registered = !!(userRec && userRec.telegramChatId);
-    const enabled   = !!(userRec && userRec.enabled);
+    const enabled   = userRec ? !!userRec.enabled : null;
+    const displayUser = userRec?.telegramUsername || normalizedTelegram || "Unknown";
 
     // Separate "systemState" (UI flow) from user status (context).
     // We keep systemState = WAITING for any incoming request, and expose the user status in currentRequest.
@@ -106,7 +137,8 @@ function handleAccessRequest(payload) {
     else if (exists) userStatus = "UNREGISTERED"; // exists but not fully registered
 
     currentRequest = {
-        telegramUsername: payload.telegramUsername,
+        user: displayUser,
+        telegramUsername: normalizedTelegram || payload.telegramUsername || null,
         timestamp: nowIso,
         registered,
         enabled,
@@ -116,7 +148,7 @@ function handleAccessRequest(payload) {
     systemState = "WAITING";
 
     pushLog({
-        user: currentRequest.telegramUsername,
+        user: currentRequest.user,
         decision: systemState,
         time: nowIso,
         source: "arduino"
@@ -149,13 +181,7 @@ function handleDecision(decision, source) {
     }
 
     const timestamp = new Date().toISOString();
-    let otp = null;
-
-    if (decision === "OK") {
-        otp = generateOtp();
-        lastOtp = otp;
-        lastOtpTime = timestamp;
-    }
+    const { otp } = ensureOtpAvailable();
 
     const payload = { decision, otp, timestamp };
 
@@ -391,6 +417,7 @@ function tryFinalizeUser(pending) {
     }
 
    telegramServiceRef?.notifyUserRegistered?.(user);
+    sendOtpToUser(user, "registration");
 
     // ✅ PRIMA setti lo stato (così la dashboard lo vede)
     pending.status = "DONE";
@@ -423,12 +450,13 @@ function getCurrentRequest() {
 /* ---------- STATUS ---------- */
 
 function getStatus() {
+    const { otp, updatedAt } = otpStore.getOtp();
     return {
         systemState,
         currentRequest,
         log,
-        lastOtp,
-        lastOtpTime
+        lastOtp: otp,
+        lastOtpTime: updatedAt
     };
 }
 function requestDeleteUser(user) {
@@ -516,5 +544,8 @@ module.exports = {
     handleFaceEnrollResult,
     handleDeleteResult,
     requestDeleteUser,
-    getPendingDeletes
+    getPendingDeletes,
+    regenerateOtp,
+    ensureInitialOtp,
+    getOtpInfo
 };

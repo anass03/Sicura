@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const userStore = require("../services/userStore");
 const telegramService = require("../services/telegramService");
+const accessService = require("../services/accessService");
 const { JWT_SECRET } = require("../config");
 const { requireAdmin } = require("../middleware/authMiddleware");
 const crypto = require("crypto");
@@ -94,6 +95,10 @@ router.post("/register-user", (req, res) => {
         if (telegramService.notifyUserRegistered) {
             telegramService.notifyUserRegistered(user);
         }
+        const otpInfo = accessService.ensureInitialOtp?.();
+        if (otpInfo && telegramService.notifyOtpForUser) {
+            telegramService.notifyOtpForUser(user, otpInfo, "registration");
+        }
         res.json({ ok: true, user: { id: user.id, username: user.username } });
     } catch (e) {
         res.status(400).json({ error: e.message });
@@ -128,12 +133,21 @@ router.post("/register-admin",
                 phone,
                 telegramUsername
             });
+            let otpInfo = null;
+            if (accessService.ensureInitialOtp) {
+                otpInfo = accessService.ensureInitialOtp();
+            }
             if (telegramService.notifyUserRegistered) {
                 telegramService.notifyUserRegistered(admin);
             }
+            if (otpInfo && telegramService.notifyOtpForUser) {
+                telegramService.notifyOtpForUser(admin, otpInfo, "initial-admin");
+            }
             res.json({
                 ok: true,
-                admin: { id: admin.id, username: admin.username }
+                admin: { id: admin.id, username: admin.username },
+                otp: otpInfo?.otp || null,
+                otpUpdatedAt: otpInfo?.updatedAt || null
             });
         } catch (e) {
             res.status(400).json({ error: e.message });

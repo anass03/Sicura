@@ -1,15 +1,24 @@
 {
   "admins": [
     {
-      "id": "adm_23m12fkdl7rmjn4zmyj",
+      "id": "adm_n5407xvzmkfmjvn471v",
       "username": "admin",
-      "passwordHash": "$2b$10$fjtd6Z3Gen7dWb2UPWHTdOxzKZyX9LTtyKgHhgFOwVkELY6Xnrf2u",
+      "passwordHash": "$2b$10$/1HlZwH65QctUQMrMqgz8.4Kss9jQX2rK2wcKIT7zaFeB20m2cxgq",
       "phone": "3208653097",
       "telegramUsername": "anass003",
       "telegramChatId": 340098936,
       "enabled": true,
-      "sessionId": "4f017d44-94d1-434a-9533-8c41cc1f66fa"
+      "sessionId": "91e64510-f852-4e92-b465-148627dc015a"
     }
   ],
-  "users": []
+  "users": [
+    {
+      "id": "usr_2n077n1854qmjzj8enh",
+      "username": "Andrea dalla",
+      "telegramUsername": "andreaaa0612",
+      "telegramChatId": 6631008513,
+      "enabled": true,
+      "faceRegistered": true
+    }
+  ]
 }
