@@ -240,7 +240,5 @@ hping3 -S -p 1883 --faster 10.0.11.20   # DoS detection example
 ## Team
 | Name | Role | Main Contributions |
 | --- | --- | --- |
-| Member A | Embedded Lead | Firmware (face-ID integration, keypad/LCD UI, buzzer timing), hardware assembly |
-| Member B | Backend Lead | Node/Express APIs, MQTT bridge, JWT auth, dashboard flows, cloudflared exposure |
-| Member C | SDN/Networking | Ryu/OpenFlow policies, Kathará lab topology, host proxy/forwarding, firewall REST |
-| Member D | Security & QA | Threat modeling, Telegram bot flows, OTP lifecycle, testing and documentation |
+| ANAS SOUSSANE | Backend / SDN / Embedded (MQTT) | Node/Express server + dashboard APIs, MQTT integration/bridge, SDN firewall lab (Ryu/OpenFlow + Kathará/OVS) and REST proxy/forwarding, Arduino MQTT/Wi-Fi logic, GitHub repository setup & maintenance |
+| ANDREA DALLA VILLA | Embedded / Documentation | Arduino firmware (UI + hardware logic: LCD/keypad/FaceID flow/LEDs/buzzer handling), hardware assembly support, demo video, course presentation (slides) |
