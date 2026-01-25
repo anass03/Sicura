@@ -207,7 +207,7 @@ hping3 -S -p 1883 --faster 10.0.11.20   # DoS detection example
 
 ## Links
 - Presentation: `slides/presentation.pptx`
-- Demo video (YouTube): _PLACEHOLDER: add link_
+- Demo video (YouTube): https://youtu.be/OyNxdv6P7Q0?si=cZilz_sPnY5kkWRg
 
 ## Images
 ![Firmware flow and UI mock](images/Screenshot%20from%202026-01-24%2020-17-17.png)
