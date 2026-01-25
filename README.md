@@ -205,6 +205,18 @@ nmap -p 1800-1815 10.0.11.20       # triggers port-scan detection from outside
 hping3 -S -p 1883 --faster 10.0.11.20   # DoS detection example
 ```
 
+## References / Documentation
+- Telegram bot API (node-telegram-bot-api): https://github.com/yagop/node-telegram-bot-api/blob/master/doc/usage.md#events
+- Node.js: https://nodejs.org/en/docs
+- Express: https://expressjs.com/en/guide/routing.html
+- MQTT.js: https://github.com/mqttjs/MQTT.js#readme
+- Arduino Uno R4 WiFi: https://docs.arduino.cc/hardware/uno-r4-wifi/
+- ArduinoMqttClient: https://github.com/arduino-libraries/ArduinoMqttClient
+- LiquidCrystal_I2C: https://github.com/johnrickman/LiquidCrystal_I2C
+- Ryu controller: https://ryu.readthedocs.io/en/latest/
+- Kathará network emulation: https://github.com/KatharaFramework/Kathara
+- Open vSwitch: https://www.openvswitch.org/support/
+
 ## Links
 - Presentation: `slides/presentation.pptx`
 - Demo video (YouTube): https://youtu.be/OyNxdv6P7Q0?si=cZilz_sPnY5kkWRg
