@@ -85,12 +85,12 @@
   - Persistence in `server/data/`: `users.json` (admins/users, telegram usernames/chat IDs, enabled flags), `otp.json` (shared OTP), `accessLog.json` (recent access decisions, rotated to 7 days).
   - `accessService.js`: orchestrates requests from Arduino, decides routing (web vs Telegram), pushes MQTT decisions, manages OTP lifecycle, pending enroll/delete flows, writes logs.
 - **MQTT bridge**:
-  - `mqttService.js`: connects to `MQTT_URL` (plain TCP in code; TLS path `MQTT_CA_PATH` exists but is unused), subscribes `accesso/richiesta` and `accesso/utenti`, publishes `accesso/decisione` and user updates.
-  - `telegramService.js`: Telegram bot (token from `TELEGRAM_TOKEN`) handles `/start` to link chats, `/yes` `/no` (and Italian aliases) to approve/deny; notifies admin or user on requests and OTP changes.
+  - `mqttService.js`: connects to `MQTT_URL` (plain TCP in code; TLS path `MQTT_CA_PATH` exists but is unused, mqtt is protected by the FIREWALL), subscribes `accesso/richiesta` and `accesso/utenti`, publishes `accesso/decisione` and user updates.
+  - `telegramService.js`: Telegram bot (token from `TELEGRAM_TOKEN`) handles `/start` to link chats, `/yes` `/no` to approve/deny; notifies admin or user on requests and OTP changes.
   - `otpStore.js` (not shown above) stores current OTP on disk; `userStore.js` normalizes Telegram usernames, saves admins/users, enforces uniqueness, links chats.
 - **Firewall + lab control**:
-  - `/api/ui/firewall/*` (`firewallRoutes.js`): admin-only proxy to Ryu REST (`RYU_API_BASE` env) with fallbacks to `127.0.0.1:18080` and management IP `10.0.0.1:8080`.
-  - `/api/ui/lab/start|stop` (`labRoutes.js`): admin-only start/stop Kathará lab via `labManager.js` (`kathara lstart --noterminals` / `lclean` in `ngn-sdn-firewall`).
+  - `/api/ui/firewall/*` (`firewallRoutes.js`): proxy to Ryu REST (`RYU_API_BASE` env) with fallbacks to `127.0.0.1:18080` and management IP `10.0.0.1:8080`.
+  - `/api/ui/lab/start|stop` (`labRoutes.js`): start/stop Kathará lab via `labManager.js` (`kathara lstart --noterminals` / `lclean` in `ngn-sdn-firewall`).
   - `middleware/hostMiddleware.js` can restrict to localhost if wired.
 - **Access model**: Admins manage users, OTP, and enrollment. Registered/enabled users approve/deny their own requests via Telegram; unregistered/disabled users fall back to admin approval or denial. JWT protects all admin APIs; dashboard uses the token for firewall/lab calls.
 
