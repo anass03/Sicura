@@ -107,6 +107,52 @@
 - **Dashboard integration**: `firewallRoutes.js` proxies REST calls; `labRoutes.js` can start/stop the lab from the UI (dashboard “firewall page” buttons call these routes). `labManager.js` runs `kathara lstart/lclean` headless.
 - **Host access**: Use `python3 ngn-sdn-firewall/ryu_host_proxy.py` (binds 127.0.0.1:18080) or `tools/forward-ryu.sh` (Docker socat) to reach controller from host; backend fallbacks include 127.0.0.1:18080, localhost:8080, and mgmt IP 10.0.0.1:8080.
 
+## Environment setup (JWT, Telegram, TLS)
+- **Secrets (required to start server)**:
+```bash
+export JWT_SECRET="change-me-to-a-strong-random-string"
+export TELEGRAM_TOKEN="123456789:token-from-BotFather"   # create bot via @BotFather
+```
+Run `npm start` in the same shell (or add to your shell profile/systemd env).
+
+- **TLS for MQTT (not in repo)**:
+  - Create cert folder and place your CA cert as expected by `config.js`:
+    ```bash
+    mkdir -p server/mosq-certs
+    cp /path/to/your/mqtt_ca.crt server/mosq-certs/mqtt_ca.crt
+    ```
+  - If your broker uses TLS, set `MQTT_URL` in `server/config.js` to `mqtts://<host>:<port>` and ensure the CA matches the broker cert. Self-signed example:
+    ```bash
+    # generate CA
+    openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+      -keyout ca.key -out mqtt_ca.crt -subj "/CN=local-mqtt-ca"
+    # generate broker cert signed by CA
+    openssl req -new -nodes -newkey rsa:2048 -keyout broker.key -out broker.csr -subj "/CN=broker.local"
+    openssl x509 -req -in broker.csr -CA mqtt_ca.crt -CAkey ca.key -CAcreateserial -out broker.crt -days 365
+    # copy mqtt_ca.crt into server/mosq-certs/ as above and configure your broker with broker.crt/broker.key
+    ```
+  - Without TLS, leave `MQTT_URL` as `mqtt://host:1883` and omit the cert (current default).
+- **TLS for the dashboard** (optional if you want HTTPS locally):
+  - Generate a local cert (self-signed) and run a reverse proxy (nginx/traefik or `cloudflared tunnel`) terminating TLS:
+    ```bash
+    openssl req -x509 -nodes -newkey rsa:2048 -days 365 \
+      -keyout dashboard.key -out dashboard.crt -subj "/CN=localhost"
+    ```
+  - Configure your proxy to serve `https://localhost` → `http://127.0.0.1:3000`. Example nginx server block (drop into `/etc/nginx/sites-available/sicura` and enable):
+    ```
+    server {
+      listen 443 ssl;
+      server_name localhost;
+      ssl_certificate     /path/to/dashboard.crt;
+      ssl_certificate_key /path/to/dashboard.key;
+      location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+      }
+    }
+    ```
+  - For public exposure, use `cloudflared tunnel` (as used for sicura.click) or a proper certificate from a CA; keep `CORS` origin aligned with your HTTPS URL.
+
 ## Getting Started
 1) **Backend & UI**
 ```bash
