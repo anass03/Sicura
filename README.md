@@ -1,19 +1,18 @@
 # Sicura — Embedded Software for IoT
 
 ## Overview
-- IoT access-control system with admin + user roles, dashboard management, Telegram notifications, and MQTT communication. End-to-end chain: **Arduino node (LCD + keypad + face-ID + LEDs/buzzer)** ↔ **MQTT topics** ↔ **SDN firewall protecting the MQTT broker** ↔ **REST API proxy** ↔ **Node/Express dashboard**.
-- Embedded first: Arduino Uno WiFi firmware reads keypad/face-ID, drives LCD/LED/buzzer feedback, publishes access requests and receives OTP decisions/enrollment/delete commands over MQTT.
-- Networking/SDN: Kathará lab with OVS + Ryu OpenFlow 1.3 firewall enforces allowlist on MQTT ports (1883/8883), blocks scans/DoS, exposes a REST API proxied to the dashboard, and can be started from the UI.
-- Course: Developed for “Embedded Software for IoT”.
+- End-to-end IoT access control (course: “Embedded Software for IoT”): **Arduino Uno WiFi node (LCD + keypad + face-ID + LEDs/buzzer)** → **MQTT topics** → **SDN firewall protecting the MQTT broker** → **REST API** → **Node/Express dashboard** with Telegram notifications.
+- Firmware publishes access requests and user updates, receives OTP/decision/enroll/delete commands, and drives on-device feedback.
+- SDN lab (Kathará + OVS + Ryu OpenFlow 1.3) enforces default-drop, MQTT allowlist, and DoS/scan detection, exposed via REST and proxied to the dashboard.
+- Dashboard/backend provides JWT auth, user/admin management, lab control, firewall proxy, and Telegram bot integration.
 
 ## Requirements
 - **Hardware**: Arduino Uno WiFi, face-recognition module (FM225-style), 16x2 I2C LCD, 4x4 keypad, breadboard, LEDs (green/yellow/red), buzzer, resistors, jumpers.
-- **(PLACEHOLDER: hardware schematic here)**
 - **Software**:
-  - Arduino IDE / CLI with libraries: `LiquidCrystal_I2C`, `Adafruit_Keypad`, `WiFiS3`, `ArduinoMqttClient`, `FspTimer`.
-  - Node.js 18+ and npm (dashboard backend in `server/`).
-  - MQTT broker (plain TCP 1883 used here).
-  - Kathará + Docker, Open vSwitch, Ryu (OpenFlow 1.3) for the SDN firewall lab.
+  - Arduino IDE/CLI with `LiquidCrystal_I2C`, `ArduinoMqttClient`, keypad support; set SSID/PSK and broker in `arduino/main/arduino_to_server.cpp`.
+  - Node.js 18+ and npm (`server/` backend + dashboard).
+  - MQTT broker (Mosquitto) on TCP 1883 by default; topics `accesso/richiesta`, `accesso/decisione`, `accesso/utenti` are used for requests/decisions/user updates. TLS optional via `MQTT_URL` + CA.
+  - Kathará + Docker, Open vSwitch, Ryu (OpenFlow 1.3) for the SDN lab.
   - Python 3 for `ngn-sdn-firewall/ryu_host_proxy.py`.
 
 ## Project Layout
