@@ -1,4 +1,4 @@
-# Sicura — Embedded Software for IoT
+# Sicura
 
 ## Overview
 **Sicura** is an end-to-end *Embedded Software for IoT* access-control system that integrates an **embedded Arduino node**, **MQTT messaging**, a **web dashboard/API**, and **Telegram-based approvals**.
