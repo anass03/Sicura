@@ -1,10 +1,22 @@
 # Sicura — Embedded Software for IoT
 
 ## Overview
-- End-to-end IoT access control (course: “Embedded Software for IoT”): **Arduino Uno WiFi node (LCD + keypad + face-ID + LEDs/buzzer)** → **MQTT topics** → **SDN firewall protecting the MQTT broker** → **REST API** → **Node/Express dashboard** with Telegram notifications.
-- Firmware publishes access requests and user updates, receives OTP/decision/enroll/delete commands, and drives on-device feedback.
-- SDN lab (Kathará + OVS + Ryu OpenFlow 1.3) enforces default-drop, MQTT allowlist, and DoS/scan detection, exposed via REST and proxied to the dashboard.
-- Dashboard/backend provides JWT auth, user/admin management, lab control, firewall proxy, and Telegram bot integration.
+**Sicura** is an end-to-end *Embedded Software for IoT* access-control system that integrates an **embedded Arduino node**, **MQTT messaging**, a **web dashboard/API**, and **Telegram-based approvals**.
+
+**IoT runtime path (real system):**
+- An **Arduino Uno R4 WiFi** runs a finite-state firmware (UI + authentication logic) using **I2C LCD**, **4x4 keypad**, **LEDs**, and a **buzzer** (timer-driven feedback).  
+- The Arduino talks to a central **MQTT broker** over Wi-Fi:
+  - publishes access requests (`accesso/richiesta`)
+  - receives OTP/decisions (`accesso/decisione`)
+  - handles enroll/delete/user sync (`accesso/utenti`)
+- A **Node/Express backend** subscribes/publishes on the same MQTT topics, implements **admin/user management**, **JWT-protected APIs**, **OTP lifecycle**, logging, and triggers **Telegram notifications** (2FA-style approval and commands).
+- The **web dashboard** (served by Express) provides user monitoring, enrollment/deletion, access decisions and system status; it is also exposed publicly via **cloudflared** under the `sicura.click` domain.
+
+**Security & networking lab (SDN):**
+- In parallel, an **SDN firewall lab** (Kathará + Open vSwitch + Ryu/OpenFlow 1.3) demonstrates **MQTT traffic protection** (default-drop, allowlist, scan/DoS detection) and exposes a **Ryu REST API**.
+- The dashboard can control/inspect SDN rules and events through this REST API (via host proxy/forwarding).  
+> Note: the SDN lab currently protects the MQTT broker inside the emulated topology; if the Arduino is outside that topology, its real MQTT traffic is not filtered inline by the SDN firewall.
+
 
 ## Requirements
 - **Hardware**: Arduino Uno WiFi, face-recognition module (FM225-style), 16x2 I2C LCD, 4x4 keypad, breadboard, LEDs (green/yellow/red), buzzer, resistors, jumpers.
@@ -94,7 +106,7 @@
 - **Access model**: Admins manage users, OTP, and enrollment. Registered/enabled users approve/deny their own requests via Telegram; unregistered/disabled users fall back to admin approval or denial. JWT protects all admin APIs; dashboard uses the token for firewall/lab calls.
 
 ## Security (Cross-Cutting)
-- **TLS/certificates**: `config.js` points to `mosq-certs/mqtt_ca.crt`, but `mqttService.js` connects with plain `mqtt.connect(MQTT_URL)` and comments “Connessione semplice senza TLS”; no TLS enforcement in code. Browser side served over HTTPS via cloudflared (sicura.click) but backend listens plain HTTP:3000.
+- **TLS/certificates**: `config.js` points to `mosq-certs/mqtt_ca.crt`, but `mqttService.js` connects with plain `mqtt.connect(MQTT_URL)`; TLS is planned/partially scaffolded but not enforced in current code; security relies on network isolation/SDN lab. Browser side served over HTTPS via cloudflared (sicura.click) but backend listens plain HTTP:3000.
 - **JWT auth**: Issued in `authRoutes.js` with role `admin` and session id; verified in `authMiddleware.js` for every protected route (status, decision, user mgmt, firewall, lab). Missing/expired tokens return 401; non-admin 403.
 - **SDN firewalling**: `ngn-sdn-firewall/shared/sdn_firewall.py` installs default-drop, proxy ARP gateways, and deterministic flows allowing MQTT (1883/8883) only from inside subnet `10.0.10.0/24`; blocks outside/scan/DoS (port-scan window 10s/6 ports, DoS 5s/160 pkts, SYN flood heuristics in `firewall_logic.py`), supports manual block/unblock IP/ports via REST.
 - **Telegram bot**: Token comes from env `TELEGRAM_TOKEN`; chat IDs stored in `users.json`. Notifications trigger on access requests, OTP changes, registrations, `/yes` `/no` decisions. Bot commands only act if chat is linked to admin/user (`userStore` checks).
