@@ -76,6 +76,7 @@
 ## Server (Node/Express)
 - Serves static dashboard pages from `server/public` and APIs under `/api`. CORS allows `https://dashboard.sicura.click` (cloudflared tunnel → sicura.click domain was used to expose the dashboard).
 <img src="images/Foto%2005-01-26,%2010%2048%2050.webp" alt="Cloudflared exposure" width="420">
+
 - **Auth & sessions**:
   - `/api/auth` (`authRoutes.js`): admin registration/login with bcrypt-hashed password, JWT issuance (`jsonwebtoken`) signed with `JWT_SECRET`, brute-force throttling in-memory, single-session enforcement via `sessionId`. Admin status endpoint (`/admin-status`).
   - `authMiddleware.js`: `requireAdmin` verifies Bearer JWT, role `admin`, enabled flag, and session id.
