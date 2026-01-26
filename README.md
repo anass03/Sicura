@@ -61,11 +61,11 @@
 ## Embedded Hardware (Prototype)
 | Component | Purpose | Interface/Pins | Polling or Interrupt | Notes |
 | --- | --- | --- | --- | --- |
-| Arduino Uno WiFi | Main controller + WiFi/MQTT client | UART (Serial1) to face module; I2C to LCD; GPIO A0-A3 LEDs/buzzer; D2-D9 keypad | Mixed: buzzer uses timer interrupt; others polling | WiFi via `WiFiS3`, MQTT via `ArduinoMqttClient` |
-| 16x2 I2C LCD | User prompts / status | I2C (LiquidCrystal_I2C addr 0x27) | Polling | Cleared/redrawn on state changes |
+| Arduino Uno R4 WiFi | Main controller + WiFi/MQTT client | See other components | N/A | WiFi via `WiFiS3`, MQTT via `ArduinoMqttClient` |
+| 16x2 I2C LCD | User prompts / status | I2C 'sda=A4, scl=A5' | N/A | Cleared/redrawn on state changes |
 | 4x4 Keypad | User PIN entry and commands | GPIO rows 9,8,7,6 + cols 5,4,3,2 | Polling via `Adafruit_Keypad.tick()` | Triggers PIN submit (#) or unlock (*) |
-| Face recognition module | Primary identity check | UART `Serial1` | Polling (serial read loop) | Custom protocol (enroll, delete, unlock, notes) |
-| LEDs (G/Y/R) | Status / alarms | A0, A1, A2 | Polling | Set per state/decision |
+| Face recognition module | Primary identity check | UART `tx, rx` | Polling (serial1 read loop); Internally managed by **self interrupt**  | Custom protocol (enroll, delete, unlock, notes) |
+| LEDs (G/Y/R) | Status / alarms | A0, A1, A2 | N/A | Set per state/decision |
 | Buzzer | Acoustic feedback | A3 + timer ISR | **Interrupt** (1ms timer with `FspTimer`) | Sequences driven by ISR + `tone()` |
 | Breadboard, resistors, jumpers | Wiring and debouncing | N/A | N/A | Used to mount keypad/LEDs/buzzer safely |
 
