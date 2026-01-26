@@ -4,7 +4,7 @@
 **Sicura** is an end-to-end *Embedded Software for IoT* access-control system that integrates an **embedded Arduino node**, **MQTT messaging**, a **web dashboard/API**, and **Telegram-based approvals**.
 
 **IoT runtime path (real system):**
-- An **Arduino Uno R4 WiFi** runs a finite-state firmware (UI + authentication logic) using **I2C LCD**, **4x4 keypad**, **LEDs**, and a **buzzer** (timer-driven feedback).  
+- An **Arduino Uno R4 WiFi** runs a finite-state firmware (UI + authentication logic).  
 - The Arduino talks to a central **MQTT broker** over Wi-Fi:
   - publishes access requests (`accesso/richiesta`)
   - receives OTP/decisions (`accesso/decisione`)
@@ -19,7 +19,7 @@
 
 
 ## Requirements
-- **Hardware**: Arduino Uno WiFi, face-recognition module (FM225-style), 16x2 I2C LCD, 4x4 keypad, breadboard, LEDs (green/yellow/red), buzzer, resistors, jumpers.
+- **Hardware**: Arduino Uno R4 WiFi, face-recognition module (**FM225-CORE-V202**), 16x2 **0X27 I2C LCD**, **4x4 keypad**, **breadboard**, **LEDs** (green/yellow/red), **buzzer**, **resistors**, **jumpers**.
 - **Software**:
   - Arduino IDE/CLI with `LiquidCrystal_I2C`, `ArduinoMqttClient`, keypad support; set SSID/PSK and broker in `arduino/main/arduino_to_server.cpp`.
   - Node.js 18+ and npm (`server/` backend + dashboard).
@@ -62,11 +62,11 @@
 | Component | Purpose | Interface/Pins | Polling or Interrupt | Notes |
 | --- | --- | --- | --- | --- |
 | Arduino Uno R4 WiFi | Main controller + WiFi/MQTT client | See other components | N/A | WiFi via `WiFiS3`, MQTT via `ArduinoMqttClient` |
-| 16x2 I2C LCD | User prompts / status | I2C 'sda=A4, scl=A5' | N/A | Cleared/redrawn on state changes |
-| 4x4 Keypad | User PIN entry and commands | GPIO rows 9,8,7,6 + cols 5,4,3,2 | Polling via `Adafruit_Keypad.tick()` | Triggers PIN submit (#) or unlock (*) |
+| 16x2 I2C LCD | User prompts / status | I2C `sda=A4, scl=A5` | N/A | Cleared/redrawn on state changes |
+| 4x4 Keypad | User PIN entry and commands | Parallel `rows D9,D8,D7,D6` + `cols D5,D4,D3,D2` | Polling via `Adafruit_Keypad.tick()` | Triggers PIN submit (#) or unlock (*) |
 | Face recognition module | Primary identity check | UART `tx, rx` | Polling (serial1 read loop); Internally managed by **self interrupt**  | Custom protocol (enroll, delete, unlock, notes) |
-| LEDs (G/Y/R) | Status / alarms | A0, A1, A2 | N/A | Set per state/decision |
-| Buzzer | Acoustic feedback | A3 + timer ISR | **Interrupt** (1ms timer with `FspTimer`) | Sequences driven by ISR + `tone()` |
+| LEDs (G/Y/R) | Status / alarms | GPIO A0, A1, A2 | N/A | Set per state/decision |
+| Buzzer | Acoustic feedback | GPIO A3 + timer ISR | **Interrupt** (1ms timer with `FspTimer`) | Sequences driven by ISR + `tone()` |
 | Breadboard, resistors, jumpers | Wiring and debouncing | N/A | N/A | Used to mount keypad/LEDs/buzzer safely |
 
 <img src="images/Foto%2022-01-26,%2021%2019%2054.jpg" alt="Hardware prototype" width="640">
@@ -75,14 +75,14 @@
 - **Architecture**: Finite-state loop (`currentState` in `main.ino`) switching between `SERVER_TO_ARDUINO` (waiting for decisions/enroll/delete), `ARDUINO_TO_SERVER` (publishing access requests), and `KEYPAD_STEP` (PIN entry). State transitions happen when `currentState` changes; each state has `*_init` + `*_loop`.
 - **Component flow**: LCD shows prompts; keypad collects PIN; face module on Serial1 handles unlock/enroll/delete; LEDs/buzzer provide feedback; MQTT drives access/OTP flows.
 - **WiFi/MQTT**: `connettiWiFi()` + `connettiMQTT()` (blocking reconnect loops). MQTT topics: `accesso/richiesta` (publish JSON with `telegramUsername`), `accesso/decisione` (subscribe to decisions/OTP), `accesso/utenti` (subscribe to enroll/delete actions and results). Reconnect strategy: loop checks `mqttClient.connected()` and re-calls `connettiMQTT()`; `mqttClient.poll()` is invoked in main loop and inside `smartDelay`.
-- **Face recognition**: `faceID.cpp` implements FM225-style binary protocol over `Serial1` (messages: enroll `0x1D`, delete `0x20`, unlock `0x12`, ping `0x02`, notes). User table (`userTable`) is maintained locally for UID/name mapping and deletion.
+- **Face recognition**: `faceID.cpp` implements FM225-CORE-V202 binary protocol over `Serial1` (messages: enroll `0x1D`, delete `0x20`, unlock `0x12`, ping `0x02`, notes). User table (`userTable`) is maintained locally for UID/name mapping and deletion.
 - **Keypad/LCD**: `keypad_step.cpp` polls keypad events; `#` validates PIN against OTP in `password[]`; `*` triggers unlock/verification. LCD text updated only on change (`showIfChanged`) to reduce flicker.
-- **Buzzer timer**: `hardware.cpp` sets a 1ms periodic timer via `FspTimer` (`initBeepTimer` → `timer_callback`). ISR updates beep sequence; `handleBuzzer()` applies `tone()`/`noTone()` in loop. LEDs/buzzer are otherwise driven by polling functions.
+- **Buzzer timer**: `hardware.cpp` sets a 1ms periodic timer via `FspTimer` (`initBeepTimer` → `timer_callback`). ISR updates beep sequence; `handleBuzzer()` applies `tone()`/`noTone()` in loop. 
 - **MQTT messaging logic**:
   - Access request: after face unlock (`faceID.cpp` sets `user_name`), `arduino_to_server.cpp` publishes JSON to `accesso/richiesta`.
   - Decision handling: `server_to_arduino.cpp::messageReceived` checks payload for `OK` → loads OTP into `password[]` and moves to `KEYPAD_STEP`; `KO` sets denial; `START_ENROLL`/`DELETE` propagate to face module and respond on `accesso/utenti` with `ENROLL_RESULT`/`DELETE_RESULT`.
   - Unknown faces: result code 8 sets `user_name="unknownuser"` and requests admin approval.
-- **Polling vs Interrupt (verified)**: Timer interrupt used **only** for the buzzer (`initBeepTimer` with `FspTimer`, ISR `timer_callback`). LCD, keypad, face module, LEDs all use polling in the main loop (`keypad.tick()`, `mqttClient.poll()`, `readFM225()` with blocking reads); no `attachInterrupt` or other ISRs found.
+- **Polling vs Interrupt (verified)**: Timer interrupt used **only** for the buzzer (`initBeepTimer` with `FspTimer`, ISR `timer_callback`). keypad, face module and MQTT all use polling in the main loop (`keypad.tick()`, `mqttClient.poll()`, `readFM225()` with blocking reads);
 
 ## Server (Node/Express)
 - Serves static dashboard pages from `server/public` and APIs under `/api`. CORS allows `https://dashboard.sicura.click` (cloudflared tunnel → sicura.click domain was used to expose the dashboard).
