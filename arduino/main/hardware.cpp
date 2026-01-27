@@ -79,13 +79,9 @@ void initBeepTimer() {
 
 void handleBuzzer() {
   if (!buzzerUpdate) return;
-
-  noInterrupts();
-  bool active = buzzerActive;
-  int f = buzzerFreq;
-  buzzerUpdate = false;
+  noInterrupts(); bool active = buzzerActive;
+  int f = buzzerFreq; buzzerUpdate = false;
   interrupts();
-
   if (!active || f <= 0) noTone(A3);
   else tone(A3, f);
 }

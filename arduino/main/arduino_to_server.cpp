@@ -90,7 +90,6 @@ setLeds(false, true, false);
   Serial.println("send query on MQTT...");
   Serial.println(json);
 
-  
 
   mqttClient.beginMessage(topic_richiesta);
   mqttClient.print(json);
