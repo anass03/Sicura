@@ -229,7 +229,7 @@ hping3 -S -p 1883 --faster 10.0.11.20   # DoS detection example
 - Open vSwitch: https://www.openvswitch.org/support/
 
 ## Links
-- Presentation: `slides/presentation.pptx`
+- Presentation: `slides/sicura.pdf`
 - Demo video (YouTube): https://youtu.be/OyNxdv6P7Q0?si=cZilz_sPnY5kkWRg
 
 ## Images
