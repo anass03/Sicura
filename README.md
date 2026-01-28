@@ -229,7 +229,7 @@ hping3 -S -p 1883 --faster 10.0.11.20   # DoS detection example
 - Open vSwitch: https://www.openvswitch.org/support/
 
 ## Links
-- Presentation: `slides/sicura.pdf`
+- Presentation: https://www.canva.com/design/DAG_Wdov6b0/-6oCLbMZ6LWfmdhnGxB0Aw/edit?utm_content=DAG_Wdov6b0&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton`
 - Demo video (YouTube): https://youtu.be/OyNxdv6P7Q0?si=cZilz_sPnY5kkWRg
 
 ## Images
@@ -241,4 +241,4 @@ hping3 -S -p 1883 --faster 10.0.11.20   # DoS detection example
 | Name | Role | Main Contributions |
 | --- | --- | --- |
 | ANAS SOUSSANE | Backend / SDN / Embedded | Node/Express server + dashboard APIs, MQTT integration/bridge, SDN firewall lab (Ryu/OpenFlow + Kathará/OVS) and REST proxy/forwarding, **Arduino firmware** (Wi-Fi/MQTT + access flow integration), **hardware logic** (LCD/keypad/FaceID/LED/buzzer integration), GitHub repository setup & maintenance |
-| ANDREA DALLA VILLA | Embedded / Documentation | **Arduino firmware** (UI + state machine + input handling), **hardware logic** (LCD/keypad/FaceID/LED/buzzer integration), hardware assembly support, demo video, course presentation (slides) |
+| ANDREA DALLA VILLA | Embedded / Documentation | **Arduino firmware** (UI + state machine + input handling), **hardware logic** (LCD/keypad/FaceID/LED/buzzer integration), hardware assembly support, demo video, presentation (slides) |
