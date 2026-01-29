@@ -1,10 +1,10 @@
 #include "arduino_to_server.h"
 
 
-char ssid[] = "iPhone di Anas";
-char pass[] = "plmqaz&7";
+char ssid[] = "Wifi-name";
+char pass[] = "Insert-here-the-password";
 
-const char broker[] = "172.20.10.3";
+const char broker[] = "Broker-IP";
 int port = 1883;
 
 // MQTT shared instance
