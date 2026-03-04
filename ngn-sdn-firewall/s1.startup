@@ -24,15 +24,15 @@ for i in 1 2 3 4 5 6 7; do
   ovs-vsctl --may-exist add-port br0 "eth$i"
 done
 
-# L3 gateway on br0
-GATEWAY_MAC="02:aa:bb:cc:dd:01"
-ip link set br0 address ${GATEWAY_MAC}
-ip addr add 10.0.10.1/24 dev br0 || true
-ip addr add 10.0.20.1/24 dev br0 || true
+# Il bridge NON deve avere IP né fare routing.
+# Il routing L3 è gestito interamente dal controller Ryu.
 ip link set br0 up
-sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
+
+# Disabilita ip_forward — il kernel NON deve instradare
+sysctl -w net.ipv4.ip_forward=0 >/dev/null 2>&1 || true
 
 # OpenFlow controller
 ovs-vsctl set bridge br0 protocols=OpenFlow13
 ovs-vsctl set-controller br0 "tcp:${CTRL_IP}:6633"
 
+echo "[S1] OVS configurato, controller=${CTRL_IP}:6633"

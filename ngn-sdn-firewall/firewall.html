@@ -141,7 +141,7 @@
             <div class="card-header">
                 <div>
             <div class="card-title">Overview</div>
-            <div class="label-small">MQTT hosts · rules · blocks</div>
+            <div class="label-small">OpenFlow rules · MQTT broker</div>
                 </div>
                 <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
                     <div id="labStatus" class="pill red">Lab: STOPPED</div>
@@ -151,16 +151,16 @@
                 </div>
             </div>
             <div class="stat-value" id="rulesCount">-</div>
-            <div class="muted" id="rulesBreakdown">policy rules (no L2 learning) + temporary blocks</div>
+            <div class="muted" id="rulesBreakdown">OpenFlow flows installed on the switch</div>
             <div style="display:flex; gap:10px; flex-wrap: wrap; margin-top:8px;">
-                <span class="badge" id="baseRules">Policy: -</span>
-                <span class="badge" id="dynamicRules">Dynamic: -</span>
-                <span class="badge" id="blockedIpCount">IPs: 0</span>
-                <span class="badge" id="blockedPortCount">Ports: 0</span>
-                <span class="badge" id="mqttHosts">MQTT hosts: -</span>
-                <span class="badge" id="allowedSources">Allowed src: -</span>
+                <span class="badge" id="mqttHosts">Broker: -</span>
+                <span class="badge" id="baseRules">MQTT: -</span>
+                <span class="badge" id="dynamicRules">Static: -</span>
+                <span class="badge" id="allowedSources">Dynamic: -</span>
             </div>
-            <div class="muted-small" style="margin-top:8px;">Static: ARP proxy, TCP mirror to MQTT, deterministic set_field/output (no NORMAL).</div>
+            <span id="blockedIpCount" style="display:none"></span>
+            <span id="blockedPortCount" style="display:none"></span>
+            <div class="muted-small" style="margin-top:8px;">Packet-in inspection · L3 routing · IP/port blocking via REST</div>
         </div>
         <div class="card">
             <div class="card-header">
@@ -169,7 +169,7 @@
             </div>
             <div class="stat-value" id="trafficPackets">0 pkts</div>
             <div class="muted" id="trafficBytes">0 bytes</div>
-            <div class="muted-small" style="margin-top:4px;">From switch flow stats; includes allowed/denied.</div>
+            <div class="muted-small" style="margin-top:4px;">Counted from packet-in events (first packet per flow).</div>
             <div class="label-small" style="margin-top:6px;">Top talkers (by bytes)</div>
             <ul class="list" id="topTalkers"></ul>
         </div>
@@ -200,21 +200,46 @@
     <div class="card" style="margin-top:16px;">
         <div class="card-header">
             <div>
+                <div class="card-title">Switch Rules</div>
+                <div class="label-small">Live flow table from OVS · refreshed every 2s</div>
+            </div>
+            <span class="pill" id="flowStatsCount">0 flows</span>
+        </div>
+        <div class="table-scroll" style="max-height: 420px;">
+            <table>
+                <thead>
+                <tr>
+                    <th style="width:60px">Priority</th>
+                    <th>Match</th>
+                    <th>Action</th>
+                    <th style="width:60px">Packets</th>
+                    <th style="width:80px">TTL</th>
+                </tr>
+                </thead>
+                <tbody id="flowStatsBody">
+                <tr><td colspan="5" class="muted">Waiting for data…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+        <div class="card-header">
+            <div>
                 <div class="card-title">Events</div>
                 <div class="label-small">Last 200</div>
             </div>
             <div class="actions">
                 <select id="filterType">
                     <option value="">All types</option>
+                    <option value="MQTT_ACCESS">MQTT_ACCESS</option>
+                    <option value="MQTT_DENIED">MQTT_DENIED</option>
                     <option value="BLOCK_IP">BLOCK_IP</option>
                     <option value="UNBLOCK_IP">UNBLOCK_IP</option>
                     <option value="PORT_BLOCKED">PORT_BLOCKED</option>
                     <option value="PORT_UNBLOCKED">PORT_UNBLOCKED</option>
-                    <option value="MQTT_DENIED">MQTT_DENIED</option>
                     <option value="PORTSCAN_DETECTED">PORTSCAN_DETECTED</option>
                     <option value="DOS_DETECTED">DOS_DETECTED</option>
-                    <option value="SYN_FLOOD_DETECTED">SYN_FLOOD_DETECTED</option>
-                    <option value="SUSPICIOUS_PATTERN">SUSPICIOUS_PATTERN</option>
                 </select>
                 <input id="filterSrc" placeholder="Filter by src_ip / ip" />
             </div>
@@ -289,13 +314,14 @@
                         <input name="seconds" type="number" min="1" placeholder="60" />
                     </div>
                     <div>
-                        <label>Override allow rule</label>
+                        <label>Priority</label>
                         <select name="override_allow">
-                            <option value="false" selected>No (prio 480)</option>
-                            <option value="true">Yes (prio 600)</option>
+                            <option value="false" selected>Normal (prio 900)</option>
+                            <option value="true">Override (prio 1100)</option>
                         </select>
                     </div>
                 </div>
+                <div class="muted-small" style="margin-bottom:4px;">Override also deletes existing forwarding flows for that port.</div>
                 <button type="submit">Block port</button>
             </form>
             <form id="unblockPortForm" style="margin-top:10px;">
@@ -339,6 +365,8 @@
     const eventsBody = document.getElementById("eventsBody");
     const filterType = document.getElementById("filterType");
     const filterSrc = document.getElementById("filterSrc");
+    const flowStatsBody = document.getElementById("flowStatsBody");
+    const flowStatsCount = document.getElementById("flowStatsCount");
     const labStatus = document.getElementById("labStatus");
     const labStartBtn = document.getElementById("labStartBtn");
     const labStopBtn = document.getElementById("labStopBtn");
@@ -365,40 +393,124 @@
 
         const res = await fetch(url, options);
 
-        // Solo 401 = token non valido
+        // Only 401 = invalid token
         if (res.status === 401) {
             localStorage.removeItem("authToken");
             window.location.href = "/";
             throw new Error("Unauthorized");
         }
 
-        // 403 non è "logout": lascia che sia il caller a mostrarlo
+        // 403 is not "logout": let the caller handle it
         return res;
     }
 
 
     function formatTs(ts) {
-        const d = new Date(ts * 1000 || ts);
+        if (!ts) return "-";
+        const d = new Date(ts * 1000);
         return isNaN(d.getTime()) ? "-" : d.toLocaleString();
     }
 
+    function formatBytes(b) {
+        if (b === 0) return "0 B";
+        const units = ["B", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(b) / Math.log(1024));
+        return (b / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1) + " " + units[i];
+    }
+
+    function fmtRemaining(expires_at, nowSec) {
+        if (!expires_at) return "∞";
+        const rem = Math.round(expires_at - nowSec);
+        return rem > 0 ? rem + "s" : "0s";
+    }
+
+    function formatMatch(m) {
+        const parts = [];
+        if (m.in_port !== undefined) parts.push(`in:${m.in_port}`);
+        if (m.ipv4_src)              parts.push(`src:${m.ipv4_src}`);
+        if (m.ipv4_dst)              parts.push(`dst:${m.ipv4_dst}`);
+        if (m.ip_proto)              parts.push(m.ip_proto);
+        if (m.tcp_dst !== undefined) parts.push(`dport:${m.tcp_dst}`);
+        if (m.tcp_src !== undefined) parts.push(`sport:${m.tcp_src}`);
+        if (m.udp_dst !== undefined) parts.push(`udp:${m.udp_dst}`);
+        return parts.join(' ') || '(any)';
+    }
+
+    // cachedFlowStats + fetchedAt enable client-side TTL countdown between server polls
+    let cachedFlowStats = [];
+    let flowStatsFetchedAt = 0;
+
+    function fmtFlowTtl(f, nowSec) {
+        const elapsed = nowSec - flowStatsFetchedAt;
+        const durSec = (f.duration_sec || 0) + elapsed;
+        if (f.hard_timeout > 0) {
+            const rem = Math.max(0, f.hard_timeout - durSec);
+            return rem.toFixed(0) + 's';
+        }
+        if (f.idle_timeout > 0) {
+            return '~' + f.idle_timeout + 's idle';
+        }
+        return '∞';
+    }
+
+    function renderFlowStats(flows, nowSec) {
+        cachedFlowStats = flows;
+        if (!flowStatsFetchedAt) flowStatsFetchedAt = nowSec;
+        const total = flows.length;
+        const dynamicCount = flows.filter(f => f.priority > 50).length;
+        flowStatsCount.textContent = `${total} flows · ${dynamicCount} dyn.`;
+
+        flowStatsBody.innerHTML = "";
+        if (!total) {
+            flowStatsBody.innerHTML = `<tr><td colspan="5" class="muted">No flows.</td></tr>`;
+            return;
+        }
+        flows.forEach(f => {
+            const isDynamic = f.priority > 50;
+            const badgeCls = isDynamic ? "badge red" : "badge";
+            const actions = (f.actions || []).join(', ') || 'DROP';
+            const match = formatMatch(f.match || {});
+            const ttl = fmtFlowTtl(f, nowSec);
+            const ttlColor = isDynamic ? 'color:#fca5a5' : 'color:var(--text-muted)';
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td><span class="${badgeCls}" style="font-size:11px;padding:2px 6px">${f.priority}</span></td><td style="font-size:11px;font-family:monospace;word-break:break-all">${match}</td><td style="font-size:11px">${actions}</td><td style="font-size:11px">${f.packet_count ?? '-'}</td><td style="font-size:11px;${ttlColor}" class="flow-ttl" data-hard="${f.hard_timeout||0}" data-idle="${f.idle_timeout||0}" data-dur="${f.duration_sec||0}">${ttl}</td>`;
+            flowStatsBody.appendChild(tr);
+        });
+    }
+
+    function tickFlowTtl() {
+        if (labUiState !== "RUNNING" || !cachedFlowStats.length) return;
+        const nowSec = Date.now() / 1000;
+        document.querySelectorAll('.flow-ttl').forEach(td => {
+            const hard = +td.dataset.hard, idle = +td.dataset.idle, dur = +td.dataset.dur;
+            const elapsed = nowSec - flowStatsFetchedAt;
+            if (hard > 0) {
+                const rem = Math.max(0, hard - dur - elapsed);
+                td.textContent = rem.toFixed(0) + 's';
+            } else if (idle > 0) {
+                td.textContent = '~' + idle + 's idle';
+            }
+        });
+    }
+
     function renderStatus(data) {
+        const nowSec = Date.now() / 1000;
         statusPill.textContent = "OK";
         statusPill.classList.remove("red");
-        const mqttHostsCount = (data.mqtt_hosts || []).length;
-        const mqttPortsCount = (data.mqtt_ports || []).length;
-        const baseRuleCount = data.policy_rules ?? (1 + mqttHostsCount + (mqttHostsCount * mqttPortsCount));
-        const dynamicRuleCount = Object.keys(data.blocked_ips || {}).length + (data.blocked_ports?.length || 0);
-        rulesCount.textContent = (data.active_rules ?? (baseRuleCount + dynamicRuleCount));
-        baseRules.textContent = `Policy: ${baseRuleCount}`;
-        dynamicRules.textContent = `Dynamic: ${dynamicRuleCount}`;
-        rulesBreakdown.textContent = "Deterministic policy rules + temporary blocks (no L2 learning)";
-        blockedIpCount.textContent = "IPs: " + Object.keys(data.blocked_ips || {}).length;
-        blockedPortCount.textContent = "Ports: " + (data.blocked_ports?.length || 0);
-        mqttHosts.textContent = "MQTT hosts: " + ((data.mqtt_hosts || []).join(", ") || "-");
-        allowedSources.textContent = "Allowed src: " + ((data.allowed_mqtt_sources || []).join(", ") || "-");
+
+        // --- Overview: OpenFlow rules ---
+        const staticN = data.policy_rules || 8;
+        // Prefer actual switch flow count (active_dynamic_rules), fallback to blocked_ips/ports
+        const dynamicN = data.active_dynamic_rules ??
+            (Object.keys(data.blocked_ips || {}).length + (data.blocked_ports || []).length);
+        rulesCount.textContent = `${staticN + dynamicN} rules`;
+
+        mqttHosts.textContent = "Broker: " + ((data.mqtt_hosts || []).join(", ") || "-");
+        baseRules.textContent = "MQTT: " + ((data.mqtt_ports || []).join(", ") || "-");
+        dynamicRules.textContent = `Static: ${staticN}`;
+        allowedSources.textContent = `Dynamic: ${dynamicN}`;
         trafficPackets.textContent = `${data.traffic_to_mqtt?.packets || 0} pkts`;
-        trafficBytes.textContent = `${data.traffic_to_mqtt?.bytes || 0} bytes`;
+        trafficBytes.textContent = formatBytes(data.traffic_to_mqtt?.bytes || 0);
 
         topTalkers.innerHTML = "";
         const filteredTopTalkers = (data.top_talkers || [])
@@ -411,56 +523,92 @@
         filteredTopTalkers.forEach((t) => {
             const li = document.createElement("li");
             li.className = "list-item";
-            const labelIp = t.ip === "unknown" ? "unknown (no src in flow match)" : t.ip;
-            li.innerHTML = `<div><div>${labelIp}</div><div class="label-small">${t.packets} pkts</div></div><div>${t.bytes} B</div>`;
+            li.innerHTML = `<div><div>${t.ip}</div><div class="label-small">${t.packets} pkts</div></div><div class="badge">${formatBytes(t.bytes)}</div>`;
             topTalkers.appendChild(li);
         });
         if (!topTalkers.childElementCount) {
             topTalkers.innerHTML = `<li class="list-item"><div><div class="muted">No MQTT traffic yet.</div><div class="label-small">Generate traffic with mosquitto_pub/sub to see top talkers.</div></div></li>`;
         }
 
-        blockedIpList.innerHTML = "";
-        const ips = data.blocked_ips || {};
-        const now = Date.now() / 1000;
-        Object.entries(ips).forEach(([ip, details]) => {
-            const remaining = Math.max(0, Math.round((details.expires_at || now) - now));
+        cachedBlockedIps = data.blocked_ips || {};
+        cachedBlockedPorts = data.blocked_ports || [];
+        renderBlockedLists(Date.now() / 1000);
+
+        mqttAttempts.innerHTML = "";
+        const attempts = Object.entries(data.mqtt_attempts || {})
+            .sort((a, b) => (b[1].allowed + b[1].denied) - (a[1].allowed + a[1].denied));
+        attempts.forEach(([ip, stats]) => {
+            const allowed = stats.allowed || 0;
+            const denied = stats.denied || 0;
             const li = document.createElement("li");
             li.className = "list-item";
-            li.innerHTML = `<div><div>${ip}</div><div class="label-small">${details.reason || ""}</div></div><div class="badge red">${remaining}s</div>`;
-            blockedIpList.appendChild(li);
+            li.innerHTML = `<div><div>${ip}</div><div class="label-small">${allowed + denied} total</div></div><div style="display:flex;gap:6px"><span class="badge">${allowed} ok</span>${denied > 0 ? `<span class="badge red">${denied} denied</span>` : ""}</div>`;
+            mqttAttempts.appendChild(li);
         });
+        if (!mqttAttempts.childElementCount) {
+            mqttAttempts.innerHTML = `<li class="list-item"><span class="muted">No attempts yet.</span></li>`;
+        }
+
+        flowStatsFetchedAt = nowSec;
+        renderFlowStats(data.flow_stats || [], nowSec);
+    }
+
+    let cachedBlockedIps = {};
+    let cachedBlockedPorts = [];
+    function renderBlockedLists(nowSec) {
+        // --- Blocked IPs ---
+        let ipExpired = false;
+        blockedIpList.innerHTML = "";
+        for (const ip of Object.keys(cachedBlockedIps)) {
+            const details = cachedBlockedIps[ip];
+            if (details.expires_at && nowSec >= details.expires_at) {
+                delete cachedBlockedIps[ip]; // remove from local cache
+                ipExpired = true;
+                continue;
+            }
+            const rem = fmtRemaining(details.expires_at, nowSec);
+            const reason = details.reason || "";
+            const li = document.createElement("li");
+            li.className = "list-item";
+            li.innerHTML = `<div><div>${ip}</div><div class="label-small">${reason}</div></div><div class="badge red">${rem}</div>`;
+            blockedIpList.appendChild(li);
+        }
         if (!blockedIpList.childElementCount) {
             blockedIpList.innerHTML = `<li class="list-item"><span class="muted">No blocked IPs.</span></li>`;
         }
 
+        // --- Blocked Ports ---
+        let portExpired = false;
         blockedPortList.innerHTML = "";
-        (data.blocked_ports || []).forEach((p) => {
-            const remaining = Math.max(0, Math.round((p.expires_at || now) - now));
+        cachedBlockedPorts = cachedBlockedPorts.filter(p => {
+            if (p.expires_at && nowSec >= p.expires_at) { portExpired = true; return false; }
+            return true;
+        });
+        cachedBlockedPorts.forEach((p) => {
+            const rem = fmtRemaining(p.expires_at, nowSec);
+            const scope = p.scope || "mqtt";
+            const override = p.override_allow ? "override" : "normal prio";
+            const proto = p.protocol || "TCP";
             const li = document.createElement("li");
             li.className = "list-item";
-            li.innerHTML = `<div><div>Port ${p.port}</div><div class="label-small">${p.scope} · override=${p.override_allow}</div></div><div class="badge red">${remaining}s</div>`;
+            li.innerHTML = `<div><div>${proto}/${p.port}</div><div class="label-small">${scope} · ${override}</div></div><div class="badge red">${rem}</div>`;
             blockedPortList.appendChild(li);
         });
         if (!blockedPortList.childElementCount) {
             blockedPortList.innerHTML = `<li class="list-item"><span class="muted">No blocked ports.</span></li>`;
         }
 
-        mqttAttempts.innerHTML = "";
-        const attempts = Object.entries(data.mqtt_attempts || {});
-        attempts.forEach(([ip, stats]) => {
-            const li = document.createElement("li");
-            li.className = "list-item";
-            const allowed = stats.allowed || 0;
-            const denied = stats.denied || 0;
-            const total = allowed + denied;
-            const ratio = total ? `${allowed}/${total}` : "0/0";
-            li.innerHTML = `<div><div>${ip}</div><div class="label-small">allowed ${allowed} · denied ${denied}</div></div><div class="badge">${ratio}</div>`;
-            mqttAttempts.appendChild(li);
-        });
-        if (!mqttAttempts.childElementCount) {
-            mqttAttempts.innerHTML = `<li class="list-item"><span class="muted">No attempts yet.</span></li>`;
+        // Sync with server shortly after expiry
+        if (ipExpired || portExpired) {
+            setTimeout(fetchStatus, 400);
         }
     }
+
+    const EVENT_COLORS = {
+        BLOCK_IP: "red", MQTT_DENIED: "red", DOS_DETECTED: "red",
+        PORTSCAN_DETECTED: "red", PORT_BLOCKED: "red",
+        UNBLOCK_IP: "", MQTT_ACCESS: "", PORT_UNBLOCKED: "",
+    };
 
     let cachedEvents = [];
     function renderEvents() {
@@ -479,10 +627,12 @@
         filtered.forEach(ev => {
             const details = Object.entries(ev)
                 .filter(([k]) => !["type", "timestamp"].includes(k))
-                .map(([k, v]) => `${k}: ${v}`)
-                .join(" · ");
+                .map(([k, v]) => `<span style="color:var(--text-muted)">${k}:</span> ${v}`)
+                .join(" &nbsp;·&nbsp; ");
+            const color = EVENT_COLORS[ev.type] || "";
+            const badgeCls = color ? `badge ${color}` : "badge";
             const tr = document.createElement("tr");
-            tr.innerHTML = `<td>${ev.type}</td><td>${details}</td><td>${formatTs(ev.timestamp)}</td>`;
+            tr.innerHTML = `<td><span class="${badgeCls}" style="font-size:11px;letter-spacing:.04em">${ev.type}</span></td><td style="font-size:12px">${details}</td><td style="white-space:nowrap">${formatTs(ev.timestamp)}</td>`;
             eventsBody.appendChild(tr);
         });
     }
@@ -507,6 +657,18 @@
                 }
             }, 2000);
         }
+    }
+
+    async function fetchFlowStats() {
+        if (labUiState !== "RUNNING") return;
+        try {
+            const res = await apiFetch("/api/ui/firewall/flows");
+            if (!res.ok) return;
+            const data = await res.json();
+            const nowSec = Date.now() / 1000;
+            flowStatsFetchedAt = nowSec;
+            renderFlowStats(data.flow_stats || [], nowSec);
+        } catch (_) {}
     }
 
     async function fetchEvents() {
@@ -606,7 +768,7 @@
         window.location.href = "/";
     });
     document.getElementById("refreshBtn").addEventListener("click", () => {
-        fetchStatus(); fetchEvents(); fetchLab();
+        fetchStatus(); fetchEvents();
     });
     filterType.addEventListener("change", renderEvents);
     filterSrc.addEventListener("input", renderEvents);
@@ -619,6 +781,34 @@
     }
 
 
+    function resetUiToStopped() {
+        // Overview
+        rulesCount.textContent = "-";
+        mqttHosts.textContent = "Broker: -";
+        baseRules.textContent = "MQTT: -";
+        dynamicRules.textContent = "Static: -";
+        allowedSources.textContent = "Dynamic: -";
+        statusPill.textContent = "—";
+        statusPill.classList.remove("red");
+        // Traffic
+        trafficPackets.textContent = "0 pkts";
+        trafficBytes.textContent = "0 B";
+        topTalkers.innerHTML = "";
+        // Blocked lists
+        cachedBlockedIps = {};
+        cachedBlockedPorts = [];
+        renderBlockedLists(Date.now() / 1000);
+        // MQTT attempts
+        mqttAttempts.innerHTML = `<li class="list-item"><span class="muted">No attempts yet.</span></li>`;
+        // Events
+        cachedEvents = [];
+        renderEvents();
+        // Flow stats
+        cachedFlowStats = []; flowStatsFetchedAt = 0;
+        flowStatsBody.innerHTML = `<tr><td colspan="5" class="muted">Waiting for data…</td></tr>`;
+        flowStatsCount.textContent = "0 flows";
+    }
+
     function setUiState(state) {
         labUiState = state;
         const running = state === "RUNNING";
@@ -628,16 +818,16 @@
         if (state === "STARTING") {
             labStartBtn.disabled = true;
             labStopBtn.disabled = true;
-            labStartBtn.textContent = "Avviando…";
+            labStartBtn.textContent = "Starting…";
             showMsg(errorBox, "");
-            showMsg(successBox, "Lab in avvio…");
+            showMsg(successBox, "Lab starting…");
             setTimeout(() => showMsg(successBox, ""), 1500);
         } else if (state === "STOPPING") {
             labStartBtn.disabled = true;
             labStopBtn.disabled = true;
-            labStopBtn.textContent = "Arrestando…";
+            labStopBtn.textContent = "Stopping…";
             showMsg(errorBox, "");
-            showMsg(successBox, "Lab in arresto…");
+            showMsg(successBox, "Lab stopping…");
             setTimeout(() => showMsg(successBox, ""), 1500);
         } else if (state === "RUNNING") {
             labStartBtn.disabled = true;
@@ -651,6 +841,7 @@
             labStopBtn.disabled = true;
             labStartBtn.textContent = "Start Lab";
             labStopBtn.textContent = "Stop Lab";
+            resetUiToStopped();
         }
     }
 
@@ -680,11 +871,34 @@
     });
 
 
-    fetchStatus();
-    fetchEvents();
+    // Detect if lab is already running (e.g. page refresh or navigation back)
+    // Probe the firewall status endpoint: 200 → Ryu up → RUNNING, else STOPPED
+    async function detectLabState() {
+        try {
+            const res = await apiFetch("/api/ui/firewall/status");
+            if (res.ok) {
+                setUiState("RUNNING");
+                const data = await res.json();
+                renderStatus(data);
+                fetchEvents();
+            } else {
+                setUiState("STOPPED");
+            }
+        } catch {
+            setUiState("STOPPED");
+        }
+    }
+
     setInterval(fetchStatus, 3000);
+    setInterval(fetchFlowStats, 2000);
+    setInterval(() => {
+        if (labUiState !== "RUNNING") return;
+        const nowSec = Date.now() / 1000;
+        renderBlockedLists(nowSec);
+        tickFlowTtl();
+    }, 250);
     setInterval(fetchEvents, 4000);
-    setUiState("STOPPED");
+    detectLabState();
 
 </script>
 </body>

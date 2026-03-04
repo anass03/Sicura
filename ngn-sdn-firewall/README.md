@@ -1,6 +1,6 @@
 # NGN SDN Firewall (Kathará + Ryu + OVS)
 
-Controller Ryu OpenFlow 1.3 che protegge un broker MQTT interno. Il firewall applica regole statiche deterministiche (set_field + output, niente `NORMAL`), blocchi temporanei e detection (port-scan, DoS, SYN flood, pattern sospetti) ed espone un'API JSON per la dashboard Node.js.
+Controller Ryu OpenFlow 1.3 che protegge un broker MQTT interno. Il firewall applica regole statiche deterministiche (set_field + output, niente `NORMAL`), blocchi temporanei e detection (port-scan, DoS) ed espone un'API JSON per la dashboard Node.js.
 La rete di management `10.0.0.0/24` collega `ctrl` (10.0.0.1) e `s1` (10.0.0.2) per il canale OpenFlow; il traffico dati è separato tra LAN interna e Internet.
 
 ## Topologia lab (edge inside/outside)
@@ -48,11 +48,7 @@ Il controller parte con `ryu-manager /shared/sdn_firewall.py` e API REST su `0.0
 - Dinamiche:
   - Port-scan detection: sorgente con ≥6 porte uniche verso MQTT in 10s → evento `PORTSCAN_DETECTED` + blocco IP 30s.
   - DoS detection: ≥160 pkt in 5s verso MQTT → evento `DOS_DETECTED` + blocco 60s.
-  - SYN flood: tanti SYN con pochi ACK (rapporto <25%) in 3s → evento `SYN_FLOOD_DETECTED` + blocco 90s.
-  - Pattern sospetti:
-    * `MQTT_CONNECT_STORM`: tante nuove connessioni TCP verso 1883/8883 in 6s → blocco 75s.
-    * Flag anomale (NULL/XMAS/FIN scan) → evento `SUSPICIOUS_PATTERN` + blocco 45s.
-- Logging eventi: `BLOCK_IP`, `UNBLOCK_IP`, `PORT_BLOCKED`, `PORT_UNBLOCKED`, `MQTT_DENIED`, `PORTSCAN_DETECTED`, `DOS_DETECTED`, `SYN_FLOOD_DETECTED`, `SUSPICIOUS_PATTERN` con timestamp e dettagli.
+- Logging eventi: `BLOCK_IP`, `UNBLOCK_IP`, `PORT_BLOCKED`, `PORT_UNBLOCKED`, `MQTT_DENIED`, `PORTSCAN_DETECTED`, `DOS_DETECTED` con timestamp e dettagli.
 - Metriche: regole attive/policy, IP/porte bloccate, contatori eventi, traffico verso MQTT (pkt/byte) e top talkers, tentativi MQTT allowed/denied per sorgente.
 
 **Nota di design**: le policy MQTT non usano più `actions=NORMAL` o flow L2 imparati; ogni direzione ha flow simmetrici con `set_field(eth_src/eth_dst)` verso i MAC noti degli host e `dec_ttl` per il routing L3 tra le reti inside/outside. I packet-in sono solo mirror per telemetria/detection.
@@ -83,19 +79,6 @@ Al superamento soglia appare `PORTSCAN_DETECTED`, poi drop IP per 30s.
 h_out$ hping3 -S -p 1883 --faster 10.0.11.20
 ```
 Dopo ~160 pkt in 5s viene loggato `DOS_DETECTED` e installato blocco 60s.
-
-- **SYN flood**
-```
-h_out$ hping3 -S -p 8883 --flood 10.0.11.20
-```
-Genera `SYN_FLOOD_DETECTED` e blocco 90s se gli ACK sono pochi.
-
-- **Pattern sospetti**
-```
-h_out$ for i in $(seq 1 12); do nc -z -w1 10.0.11.20 1883; done   # MQTT_CONNECT_STORM
-h_out$ nmap -sX -p 1883 10.0.11.20                             # XMAS/NULL/FIN scan
-```
-Genera `SUSPICIOUS_PATTERN` e blocco temporaneo.
 
 - **Broker MQTT**
 Usa `mosquitto_pub` / `mosquitto_sub` o `nc` per un semplice handshake.
@@ -184,7 +167,7 @@ node server.js
 Per fermare il proxy: Ctrl+C sul processo `ryu_host_proxy.py`.
 
 ## Demo automatica
-Esegui tutti i test (baseline MQTT, deny outside, port-scan, DoS, SYN flood e pattern sospetti) e colleziona log/artifacts con:
+Esegui tutti i test (baseline MQTT, deny outside, port-scan, DoS) e colleziona log/artifacts con:
 ```
 cd ngn-sdn-firewall
 ./tests/run_demo.sh

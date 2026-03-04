@@ -57,6 +57,10 @@ router.get("/status", requireAdmin, async (req, res) => {
     return forwardJson(res, "/api/firewall/status", { method: "GET" });
 });
 
+router.get("/flows", requireAdmin, async (req, res) => {
+    return forwardJson(res, "/api/firewall/flows", { method: "GET" });
+});
+
 router.get("/events", requireAdmin, async (req, res) => {
     const limit = req.query?.limit ? Number(req.query.limit) : 200;
     const query = isNaN(limit) ? "" : `?limit=${limit}`;

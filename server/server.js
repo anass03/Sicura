@@ -32,7 +32,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // pagina dedicata firewall
 app.get("/firewall", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "firewall.html"));
+    res.sendFile(path.join(__dirname, "../ngn-sdn-firewall", "firewall.html"));
 });
 
 app.get("*", (req, res) => {

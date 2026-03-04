@@ -1,14 +1,14 @@
 {
   "admins": [
     {
-      "id": "adm_hdj3ihi184smksjafuw",
+      "id": "adm_hnpq3g19jromkzb0o8a",
       "username": "admin",
-      "passwordHash": "$2b$10$3XS3nvfCuy1EP/PGyq8O0eFFwQQoOcmsySPBIEw35j5jX0r6BoCAq",
+      "passwordHash": "$2b$10$qFGdq/mYGDoUXkwzgE9BfuYYxwK1P3ups6qeO0LFD2yEqZ/NCe/em",
       "phone": "3208653097",
       "telegramUsername": "anass003",
-      "telegramChatId": 340098936,
+      "telegramChatId": null,
       "enabled": true,
-      "sessionId": "17dd2658-624e-4014-a787-834320646397"
+      "sessionId": "c1c0d69b-6a40-4479-9e1c-a2e76b7a389d"
     }
   ],
   "users": []
