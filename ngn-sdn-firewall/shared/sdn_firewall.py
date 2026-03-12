@@ -15,10 +15,7 @@ from collections import defaultdict, deque
 
 from ryu.app.wsgi import ControllerBase, Response, route
 
-# =====================================================================
 #  Configurazione rete
-# =====================================================================
-
 MQTT_IP = "10.0.10.20"
 MQTT_PORTS = {1883, 8883}
 
@@ -41,10 +38,7 @@ def _tcp_flags_str(bits):
 INT_PORT_NAMES = {"eth1", "eth2", "eth3", "eth4"}
 EXT_PORT_NAMES = {"eth5", "eth6", "eth7"}
 
-# =====================================================================
 #  Soglie rilevamento
-# =====================================================================
-
 DOS_THRESHOLD = 20          # pacchetti nella finestra
 DOS_WINDOW = 5              # secondi
 DOS_BLOCK_DURATION = 30     # secondi di blocco
@@ -76,7 +70,6 @@ class FirewallAPIController(ControllerBase):
 
     @route('firewall', '/api/firewall/flows', methods=['GET'])
     def flows(self, req, **kwargs):
-        # Triggera un poll OVS immediato così la prossima risposta è fresca
         dp = self.app.datapath
         if dp:
             try:
@@ -163,10 +156,7 @@ class FirewallAPIController(ControllerBase):
             return Response(status=400, body='Invalid JSON')
 
 
-# =====================================================================
-#  Applicazione Ryu principale
-# =====================================================================
-
+################ Applicazione Ryu principale #####################################
 class SDNFirewall(app_manager.RyuApp):
 
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -230,16 +220,13 @@ class SDNFirewall(app_manager.RyuApp):
         )
 
         # Registro eventi (per API)
-        # NOTA: NON usare "self.events" — è riservato da Ryu internamente!
+        # NOTA: NON devo usare "self.events" — è riservato da Ryu internamente!
         self.event_log = deque(maxlen=500)
 
         # Avvia polling periodico delle statistiche OVS
         hub.spawn(self._poll_flow_stats)
 
-    # =================================================================
-    #  Helpers
-    # =================================================================
-
+    #############################  Helpers ####################################
     def _log_event(self, event_type, **details):
         event = {"type": event_type, "timestamp": time.time(), **details}
         self.event_log.appendleft(event)
@@ -311,10 +298,7 @@ class SDNFirewall(app_manager.RyuApp):
         datapath.send_msg(mod)
         self.logger.info("DROP FLOW rimosso: %s", src_ip)
 
-    # =================================================================
-    #  Blocco / Sblocco IP
-    # =================================================================
-
+    ####  Blocco / Sblocco IP
     def block_ip(self, datapath, src_ip, duration, reason):
         if src_ip in PROTECTED_IPS:
             self.logger.warning("Blocco IGNORATO per IP protetto: %s (%s)", src_ip, reason)
@@ -339,10 +323,7 @@ class SDNFirewall(app_manager.RyuApp):
             return False
         return time.time() < entry["expires_at"]
 
-    # =================================================================
-    #  API helpers (chiamate dal REST controller)
-    # =================================================================
-
+    ############  API helpers (chiamate dal REST controller) ######################à
     def get_status(self):
         now = time.time()
 
@@ -406,7 +387,7 @@ class SDNFirewall(app_manager.RyuApp):
 
     def _poll_flow_stats(self):
         """Hub greenlet: richiede statistiche flussi OVS ogni 5 secondi."""
-        hub.sleep(3)   # attendi che il datapath sia pronto
+        hub.sleep(3)   # attendo che il datapath sia pronto
         while True:
             dp = self.datapath
             if dp:
@@ -522,9 +503,7 @@ class SDNFirewall(app_manager.RyuApp):
             dp.send_msg(mod)
         self._log_event("PORT_UNBLOCKED", protocol=protocol, port=port, scope=scope)
 
-    # =================================================================
-    #  Rilevamento DoS (sliding window su packet-in)
-    # =================================================================
+    ######## Rilevamento DoS (sliding window su packet-in) ################
 
     def detect_dos(self, datapath, src_ip):
         """
@@ -539,8 +518,6 @@ class SDNFirewall(app_manager.RyuApp):
             history.popleft()
         history.append(now)
 
-        # Dopo il pruning tutti gli entry sono entro DOS_WINDOW per costruzione,
-        # quindi la soglia basta da sola senza un secondo controllo sul time_span.
         if len(history) >= DOS_THRESHOLD:
             time_span = history[-1] - history[0]
             self.logger.warning("DoS RILEVATO da %s: %d pkt in %.1fs",
@@ -551,10 +528,7 @@ class SDNFirewall(app_manager.RyuApp):
             return True
         return False
 
-    # =================================================================
-    #  Rilevamento Port-Scan
-    # =================================================================
-
+    #############  Rilevamento Port-Scan ############################à
     def detect_port_scan(self, datapath, src_ip, dst_port):
         """
         Traccia porte distinte per IP in una finestra.
@@ -579,10 +553,7 @@ class SDNFirewall(app_manager.RyuApp):
             return True
         return False
 
-    # =================================================================
-    #  Switch features → flow iniziali
-    # =================================================================
-
+    ################  Switch features → flow iniziali  ##################
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
         datapath = ev.msg.datapath
@@ -596,7 +567,7 @@ class SDNFirewall(app_manager.RyuApp):
                                               ofproto.OFPCML_NO_BUFFER)])
         self.logger.info("Table-miss installato")
 
-        # Richiedi descrizione porte per scoprire il mapping eth→numero
+        # Richiedo descrizione porte per scoprire il mapping eth→numero
         datapath.send_msg(parser.OFPPortDescStatsRequest(datapath, 0))
 
     @set_ev_cls(ofp_event.EventOFPPortDescStatsReply, MAIN_DISPATCHER)
@@ -643,9 +614,7 @@ class SDNFirewall(app_manager.RyuApp):
             self.logger.info("Ispezione %s installata su porte OVS %s",
                              zone_name, zone_port_nos)
 
-    # =================================================================
-    #  ARP handling
-    # =================================================================
+    ###############  ARP handling ################################à
 
     def _handle_arp(self, msg, in_port, pkt, datapath):
         ofp = datapath.ofproto
@@ -672,11 +641,11 @@ class SDNFirewall(app_manager.RyuApp):
                     return
 
             # È una richiesta per un IP dell'ALTRA zona?
-            # → rispondi col MAC del gateway locale (proxy ARP)
+            # rispondo col MAC del gateway locale (proxy ARP)
             src_zone = self._zone_for_port(in_port)
             dst_zone, dst_iface = self._get_out_iface(dst_ip)
             if dst_zone and dst_zone != src_zone:
-                # Rispondi col MAC del gateway della zona sorgente
+                # Rispondo con il MAC del gateway della zona sorgente
                 src_iface = self.interfaces.get(src_zone)
                 if src_iface:
                     self._send_arp_reply(datapath, parser, ofp,
@@ -801,10 +770,7 @@ class SDNFirewall(app_manager.RyuApp):
                 datapath=datapath, buffer_id=ofp.OFP_NO_BUFFER,
                 in_port=in_port, actions=actions, data=data))
 
-    # =================================================================
-    #  Packet-In: pipeline principale
-    # =================================================================
-
+    ################  Packet-In: pipeline principale  #############################
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
         msg = ev.msg
@@ -816,7 +782,6 @@ class SDNFirewall(app_manager.RyuApp):
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocol(ethernet.ethernet)
 
-        # Ignora LLDP
         if eth.ethertype == ether_types.ETH_TYPE_LLDP:
             return
 
@@ -859,13 +824,14 @@ class SDNFirewall(app_manager.RyuApp):
                                 src_ip, dst_ip, dst_port)
             return
 
-        # ---------- Ispezione DoS e PortScan (tutte le zone) ----------
-        if dst_port is not None:
+        # ---------- Ispezione DoS e PortScan (solo su SYN) ----------
+        # Limitare ai SYN evita che RST/SYN+ACK di risposta vengano contati
+        # come DoS/scan della vittima (che altrimenti verrebbe bloccata al posto
+        # dell'attaccante).
+        if is_syn:
             if self.detect_dos(datapath, src_ip):
                 return
-            # PortScan solo su SYN: evita che RST/FIN di risposta (es. da h_mqtt)
-            # vengano contati come scansione di porte
-            if is_syn and self.detect_port_scan(datapath, src_ip, dst_port):
+            if self.detect_port_scan(datapath, src_ip, dst_port):
                 return
 
         # ---------- Traffico verso MQTT: policy check ----------
@@ -878,9 +844,7 @@ class SDNFirewall(app_manager.RyuApp):
         self._handle_l3(msg, datapath, parser, ofp, in_port,
                         src_ip, dst_ip, src_zone, tcp_pkt, udp_pkt)
 
-    # =================================================================
-    #  MQTT policy
-    # =================================================================
+    ################  MQTT policy #############################
 
     def _handle_mqtt(self, msg, datapath, parser, ofp, in_port,
                      src_zone, src_ip, dst_port, tcp_pkt, is_syn):
@@ -1019,9 +983,7 @@ class SDNFirewall(app_manager.RyuApp):
                 datapath=datapath, buffer_id=ofp.OFP_NO_BUFFER,
                 in_port=in_port, actions=actions_fwd, data=msg.data))
 
-    # =================================================================
-    #  L3 Routing (traffico generico non-MQTT)
-    # =================================================================
+    ###############  L3 Routing (traffico generico non-MQTT) ##########################à
 
     def _handle_l3(self, msg, datapath, parser, ofp, in_port,
                    src_ip, dst_ip, src_zone, tcp_pkt=None, udp_pkt=None):
@@ -1093,7 +1055,7 @@ class SDNFirewall(app_manager.RyuApp):
                       idle_timeout=timeout)
 
         # Reverse: dst → src
-        # Non installiamo il flow reverse quando src_ip è un IP protetto (es. MQTT_IP):
+        # Non installo il flow reverse quando src_ip è un IP protetto (es. MQTT_IP):
         # il flow reverse (prio 60) sovrascrive l'ispezione (prio 50) e intercetta
         # i SYN successivi di un attaccante verso MQTT_IP, impedendo il DoS detection.
         src_entry = self.arp_table.get(src_ip)
@@ -1119,9 +1081,7 @@ class SDNFirewall(app_manager.RyuApp):
             datapath=datapath, buffer_id=msg.buffer_id,
             in_port=in_port, actions=actions, data=data))
 
-    # =================================================================
-    #  L2 switching (traffico non-IP)
-    # =================================================================
+    ##################  L2 switching (traffico non-IP) #######################à
 
     def _handle_l2(self, msg, in_port, eth, datapath):
         """L2 learning switch per traffico non-IP."""
@@ -1146,9 +1106,7 @@ class SDNFirewall(app_manager.RyuApp):
             datapath=datapath, buffer_id=msg.buffer_id,
             in_port=in_port, actions=actions, data=data))
 
-    # =================================================================
-    #  Check regole statiche porte
-    # =================================================================
+    ##############àà#  Check regole statiche porte #################à#
 
     def _matches_port_rule(self, tcp_pkt, udp_pkt, dst_ip):
         """Controlla se il pacchetto matcha una regola statica porta.
